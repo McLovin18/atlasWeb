@@ -5,8 +5,8 @@ import { useUser } from "../context/UserContext";
 const publicItems = [
   { name: "Inicio", path: "/", icon: "home" },
   { name: "Productos", path: "/productos", icon: "store" },
-  { name: "Complementos", path: "/adicionales", icon: "store" },
   { name: "Carrito", path: "/cart", icon: "shopping_bag" },
+  { name: "Buscar", path: "/search-results", icon: "search" },
 ];
 
 export default function BottomBarPublic() {

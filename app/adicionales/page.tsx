@@ -16,13 +16,14 @@ import {
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
-// Esta página solo muestra productos de la categoría "Ramos"
-const RAMOS_CATEGORY_ID = "1785075185964";
-
 export default function ProductosPage() {
   const searchParams = useSearchParams();
 
-  const categoria = RAMOS_CATEGORY_ID;
+  const categoria = (
+    searchParams?.get("cat") ||
+    searchParams?.get("category") ||
+    ""
+  ).trim();
   const subcategoria = (
     searchParams?.get("subcat") ||
     searchParams?.get("subcategory") ||
@@ -57,6 +58,7 @@ export default function ProductosPage() {
         const all = await obtenerProductos();
         let prods = all;
 
+        // Solo aplicar filtros si se especifica una categoría
         if (categoria && categorias.length > 0) {
           prods = prods.filter((p) =>
             productMatchesCategoria(p, categoria, categorias)
@@ -110,6 +112,7 @@ export default function ProductosPage() {
   const productosFiltrados = useMemo(() => {
     return productos
       .filter((p: any) => {
+        // Solo aplicar filtros si se especifica una categoría
         if (categoria && categorias.length > 0) {
           if (!productMatchesCategoria(p, categoria, categorias)) return false;
         } else if (categoria && !sameCategoryId(p.categoria, categoria)) {

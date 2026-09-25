@@ -16,13 +16,14 @@ import {
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
-// Esta página solo muestra productos de la categoría "Ramos"
-const RAMOS_CATEGORY_ID = "1784988607164";
-
 export default function ProductosPage() {
   const searchParams = useSearchParams();
 
-  const categoria = RAMOS_CATEGORY_ID;
+  const categoria = (
+    searchParams?.get("cat") ||
+    searchParams?.get("category") ||
+    ""
+  ).trim();
   const subcategoria = (
     searchParams?.get("subcat") ||
     searchParams?.get("subcategory") ||
@@ -57,6 +58,7 @@ export default function ProductosPage() {
         const all = await obtenerProductos();
         let prods = all;
 
+        // Solo aplicar filtros si se especifica una categoría
         if (categoria && categorias.length > 0) {
           prods = prods.filter((p) =>
             productMatchesCategoria(p, categoria, categorias)
@@ -110,6 +112,7 @@ export default function ProductosPage() {
   const productosFiltrados = useMemo(() => {
     return productos
       .filter((p: any) => {
+        // Solo aplicar filtros si se especifica una categoría
         if (categoria && categorias.length > 0) {
           if (!productMatchesCategoria(p, categoria, categorias)) return false;
         } else if (categoria && !sameCategoryId(p.categoria, categoria)) {
@@ -209,15 +212,10 @@ export default function ProductosPage() {
   </div>
   ) : productosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-              <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">
-                local_florist
-              </span>
-            </div>
             <div>
               <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
               <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-60">
-                Por el momento no hay ramos disponibles.
+                Por el momento no hay productos disponibles.
               </p>
             </div>
           </div>

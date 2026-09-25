@@ -9,7 +9,7 @@ import { ToastProvider } from "./context/ToastContext";
 import LayoutContentClient from "./components/LayoutContentClient";
 import { StructuredData } from "./components/StructuredData";
 import type { Metadata, Viewport } from "next";
-import { Source_Serif_4 } from "next/font/google";
+import { Barlow_Condensed } from "next/font/google";
 
 // ISR Global
 export const revalidate = 1800;
@@ -17,37 +17,35 @@ export const revalidate = 1800;
 // Cambiar cuando tengas el dominio
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://centraldeflorerias.com";
+  "https://goldbet.com.ec";
 
-const SITE_NAME = "Central de Florerías Guayaquil Ecuador";
+const SITE_NAME = "GoldBet Ecuador";
 
-const sourceSerif4 = Source_Serif_4({
+const barlowCondensed = Barlow_Condensed({
   subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-  variable: "--font-source-serif-4",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal"],
+  variable: "--font-barlow-condensed",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Central de Florerías Guayaquil Ecuador | Flores a domicilio",
-    template: "%s | Central de Florerías Guayaquil Ecuador",
+    default: "GoldBet Ecuador | Pronósticos deportivos y cuotas en vivo",
+    template: "%s | GoldBet Ecuador",
   },
 
   description:
-    "Compra flores y arreglos florales con entrega a domicilio en Guayaquil. Ramos de rosas, girasoles, flores para cumpleaños, aniversarios, nacimientos, condolencias y toda ocasión.",
+    "Pronósticos deportivos, cuotas en vivo y análisis de partidos de fútbol, baloncesto y tenis en Ecuador. Sigue las mejores ligas con GoldBet.",
 
   keywords: [
-    "florería Guayaquil",
-    "florerías en Guayaquil",
-    "flores a domicilio Guayaquil",
-    "envío de flores Guayaquil",
-    "arreglos florales Guayaquil",
-    "ramos de rosas",
-    "girasoles",
-    "coronas fúnebres Guayaquil",
-    "flores Ecuador",
-    "Central de Florerías Guayaquil Ecuador",
+    "pronósticos deportivos Ecuador",
+    "apuestas deportivas Ecuador",
+    "cuotas en vivo",
+    "pronósticos de fútbol",
+    "quinielas Ecuador",
+    "análisis de partidos",
+    "casas de apuestas Ecuador",
+    "GoldBet",
   ],
 
   creator: SITE_NAME,
@@ -70,17 +68,17 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: SITE_NAME,
 
-    title: "Central de Florerías Guayaquil Ecuador",
+    title: "GoldBet Ecuador | Pronósticos deportivos",
 
     description:
-      "Encuentra flores frescas y arreglos florales con entrega a domicilio en Guayaquil para toda ocasión.",
+      "Pronósticos deportivos y cuotas en vivo para las principales ligas de fútbol, baloncesto y tenis.",
 
     images: [
       {
         url: `${SITE_URL}/og-image.jpg`,
         width: 1200,
         height: 630,
-        alt: "Central de Florerías Guayaquil Ecuador",
+        alt: "GoldBet Ecuador",
       },
     ],
   },
@@ -88,10 +86,10 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
 
-    title: "Central de Florerías Guayaquil Ecuador",
+    title: "GoldBet Ecuador | Pronósticos deportivos",
 
     description:
-      "Flores frescas y arreglos florales con entrega a domicilio en Guayaquil.",
+      "Pronósticos deportivos y cuotas en vivo para fútbol, baloncesto y tenis.",
 
     images: [`${SITE_URL}/twitter-image.jpg`],
   },
@@ -123,7 +121,7 @@ export const metadata: Metadata = {
     title: SITE_NAME,
   },
 
-  category: "Floristería",
+  category: "Pronósticos deportivos",
 };
 
 export const viewport: Viewport = {
@@ -139,12 +137,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={sourceSerif4.variable}>
+    <html lang="es" className={barlowCondensed.variable}>
       <head>
         {/* Google Analytics */}
         <script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-K1Q0MYDSKF"
+          src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"
         />
 
         <script
@@ -153,18 +151,13 @@ export default function RootLayout({
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', 'G-K1Q0MYDSKF');
+              gtag('config', 'G-XXXXXXXXXX');
             `,
           }}
         />
 
         <link
           href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
-          rel="stylesheet"
-        />
-
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
           rel="stylesheet"
         />
 

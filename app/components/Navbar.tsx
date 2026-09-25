@@ -15,19 +15,129 @@ import { useUser } from "../context/UserContext";
 import { productMatches } from "../lib/search-utils";
 
 // ─────────────────────────────────────────────
-// Paleta de marca — Tienda Virtual
+// Acordeón de categorías para el drawer móvil
 // ─────────────────────────────────────────────
-const BRAND = {
-  bg: "var(--primary)",
-  bgSoft: "var(--bgSecondary)",
-  gold: "var(--secondary)",
-  goldBright: "var(--secondaryHover)",
-  border: "var(--border)",
-  borderSoft: "color-mix(in srgb, var(--border) 70%, transparent)",
-  white: "var(--primaryForeground)",
-  textMuted: "color-mix(in srgb, var(--primaryForeground) 80%, transparent)",
-};
+function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
+  const [categorias, setCategorias] = React.useState<any[]>([]);
+  const [openCat, setOpenCat] = React.useState<string | null>(null);
+  const [openSub, setOpenSub] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
+      setCategorias(sortCategoriasByOrder(mapCategorySnapshot(snap.docs)));
+    });
+    return () => unsub();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-1 my-3">
+      <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-1"
+        style={{ color: "rgba(255,255,255,0.7)" }}>
+        Categorías
+      </p>
+      {categorias.map((cat) => (
+        <div key={cat.id}>
+          <button
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{ color: "#ffffff" }}
+            onClick={() =>
+              setOpenCat(openCat === cat.id ? null : cat.id)
+            }
+          >
+            <span className="flex items-center gap-2">
+              {cat.icono && (
+                <span className="material-icons-round text-base"
+                  style={{ color: "#E0A11A" }}>
+                  {cat.icono}
+                </span>
+              )}
+              {cat.nombre}
+            </span>
+            {cat.subcategorias?.length > 0 && (
+              <span
+                className="material-icons-round text-sm transition-transform duration-200"
+                style={{
+                  color: "#ffffff",
+                  transform: openCat === cat.id ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              >
+                arrow_drop_down
+              </span>
+            )}
+          </button>
+
+          {cat.subcategorias?.length > 0 && openCat === cat.id && (
+            <div className="ml-4 mb-1 rounded-xl overflow-hidden border"
+              style={{ borderColor: "rgba(255,255,255,0.2)" }}>
+              {cat.subcategorias.map((sub: any) => (
+                <div key={sub.id}>
+                  {sub.subcategorias?.length > 0 ? (
+                    <>
+                      <button
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
+                        style={{ color: "#ffffff" }}
+                        onClick={() =>
+                          setOpenSub(openSub === sub.id ? null : sub.id)
+                        }
+                      >
+                        <span>{sub.nombre}</span>
+                        <span
+                          className="material-icons-round text-sm transition-transform duration-200"
+                          style={{
+                            color: "#ffffff",
+                            transform:
+                              openSub === sub.id
+                                ? "rotate(180deg)"
+                                : "rotate(0deg)",
+                          }}
+                        >
+                          arrow_drop_down
+                        </span>
+                      </button>
+                      {openSub === sub.id && (
+                        <div className="ml-3 border-l"
+                          style={{ borderColor: "rgba(255,255,255,0.2)" }}>
+                          {sub.subcategorias.map((subsub: any) => (
+                            <a
+                              key={subsub.id}
+                              href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
+                              className="block px-4 py-2 text-xs transition-colors"
+                              style={{ color: "rgba(255,255,255,0.7)" }}
+                            >
+                              {subsub.nombre}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <a
+                      href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
+                      className="block px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
+                      style={{ color: "#ffffff" }}
+                    >
+                      {sub.nombre}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!cat.subcategorias?.length && openCat === cat.id && (
+            <a
+              href={`${basePath}?cat=${cat.id}`}
+              className="block px-3 py-2 text-sm"
+              style={{ color: "#ffffff" }}
+            >
+              {cat.nombre}
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────
 // Navbar principal
@@ -37,10 +147,11 @@ export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [openCatId, setOpenCatId] = useState<string | null>(null);
-  const [openSubId, setOpenSubId] = useState<string | null>(null);
+  const [openCatId, setOpenCatId] = useState<string | null>(null); // Para dropdown nivel 1 en tablet/desktop
+  const [openSubId, setOpenSubId] = useState<string | null>(null); // Para dropdown nivel 2 en tablet/desktop
   const { user, carrito } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  
 
   // Barra de búsqueda
   const [searchValue, setSearchValue] = useState("");
@@ -59,6 +170,7 @@ export const Navbar = () => {
     obtenerProductos().then((prods) => setAllProducts(prods));
   }, []);
 
+  // Escuchar categorías desde Firestore
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
       setCategorias(sortCategoriasByOrder(mapCategorySnapshot(snap.docs)));
@@ -76,6 +188,7 @@ export const Navbar = () => {
     }
   }, [searchOpen]);
 
+  // Close search when clicking outside the search container
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -99,6 +212,7 @@ export const Navbar = () => {
     }
   }, []);
 
+  // Escuchar evento para activar el buscador desde home
   useEffect(() => {
     const handleActivateSearch = () => {
       setSearchOpen(true);
@@ -110,6 +224,7 @@ export const Navbar = () => {
     return () => window.removeEventListener("activateNavbarSearch", handleActivateSearch);
   }, [windowWidth]);
 
+  // Sugerencias de búsqueda
   useEffect(() => {
     if (!searchValue.trim()) { setSuggestions([]); return; }
     setSearchLoading(true);
@@ -127,12 +242,14 @@ export const Navbar = () => {
 
   const links = [
     { href: "/", label: "Inicio" },
-    { href: "/productos", label: "Promociones" },
-    { href: "/adicionales", label: "Complementos" },
-
-
+    { href: "/productos", label: "Ver Catalogo" },
+    { href: "/blogs", label: "Blogs" },
   ];
 
+  const infoSliderItems = [
+    { text: "¡Haz clic y obtén 15% de descuento en prendas seleccionadas! →", href: "https://marca-estilo-41im.vercel.app/ofertas" },
+    "🚛 Envíos a todo el Ecuador incluyendo las Islas Galápagos",
+  ];
 
   const handleSearch = () => {
     if (!searchValue.trim()) return;
@@ -145,14 +262,15 @@ export const Navbar = () => {
 
   return (
     <>
-
+      {/* ══════════════════ NAVBAR ══════════════════ */}
       <nav
-        className="sticky top-0 z-40 border-b py-3 shadow-sm backdrop-blur-md bg-black text-white"
+        className="sticky top-0 z-40 border-b py-3 shadow-sm backdrop-blur-md"
+        style={{ background: "#111827", backgroundColor: "black", borderColor: "rgba(255,255,255,0.08)" }}
       >
         {/* ── Header principal ── */}
         <div
           className="relative flex items-center justify-between gap-4 px-4 py-2 lg:px-6 lg:py-2"
-          style={{ color: BRAND.white }}
+          style={{ color: "#ffffff" }}
         >
           <div className="flex items-center gap-3 shrink-0">
             <button
@@ -176,36 +294,14 @@ export const Navbar = () => {
             </div>
           </div>
 
-          {/* Logo */}
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 flex items-center pointer-events-none">
+          {/* Brand: absolutely centered horizontally */}
+          <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex items-center pointer-events-none">
             <a
               href={user ? "/admin" : "/"}
-              className="pointer-events-auto flex flex-col items-center leading-none"
+              className="flex items-center gap-2 shrink-0 text-white pointer-events-auto"
             >
-              {/* Primera línea */}
-              <span
-                className="whitespace-nowrap"
-                style={{
-                  fontFamily: "'Hagrid Text', serif",
-                  fontSize: "clamp(1.2rem, 2vw, 2rem)",
-                  color: "white",
-                  lineHeight: 1,
-                }}
-              >
-                central de florerías
-              </span>
-
-              {/* Segunda línea */}
-              <span
-                className="mt-0.5 tracking-[0.35em] uppercase"
-                style={{
-                  fontFamily: "'Open Sauce One', sans-serif",
-                  fontSize: "0.65rem",
-                  color: "white",
-                  letterSpacing: "0.28em",
-                }}
-              >
-                GUAYAQUIL ECUADOR
+              <span className="font-heading font-bold tracking-tight whitespace-nowrap text-3xl sm:text-4xl">
+                ATLAS
               </span>
             </a>
           </div>
@@ -222,52 +318,62 @@ export const Navbar = () => {
                   <span className="material-icons-round text-2xl">search</span>
                 </button>
               ) : (
-                <form
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[min(75vw,300px)] md:w-[min(92vw,420px)] rounded-2xl border shadow-2xl z-50 overflow-hidden text-body"
-                  style={{ background: "#ffffff", borderColor: "rgba(17,24,39,0.12)" }}
-                  onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
-                >
-                  <div
-                    className="flex items-center gap-2 px-3 py-2 border-b"
-                    style={{ background: "#f8fafc", borderColor: "rgba(17,24,39,0.08)" }}
+                // Wrapper centrado verticalmente: SOLO contiene el buscador (altura fija).
+                // Las sugerencias van fuera de este cálculo de altura, ancladas por top-full,
+                // así el buscador nunca se mueve al aparecer/desaparecer resultados.
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[min(75vw,300px)] md:w-[min(92vw,420px)]">
+                  <form
+                    className="rounded-2xl border shadow-2xl z-50 overflow-hidden text-body"
+                    style={{ background: "#ffffff", borderColor: "rgba(17,24,39,0.12)" }}
+                    onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
                   >
-                    <span className="material-icons-round text-lg" style={{ color: "#64748b" }}>
-                      search
-                    </span>
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Buscar un producto..."
-                      className="bg-transparent outline-none text-sm flex-1 text-body"
-                      style={{ color: "#0f172a", minWidth: 140 }}
-                      autoComplete="off"
-                      value={searchValue}
-                      onChange={(e) => setSearchValue(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchValue("");
-                        setSuggestions([]);
-                        setSearchOpen(false);
-                      }}
-                      className="rounded-full p-1 transition-colors"
-                      style={{ color: "#64748b" }}
-                      aria-label="Cerrar búsqueda"
+                    <div
+                      className="flex items-center gap-2 px-3 py-2"
+                      style={{ background: "#f8fafc" }}
                     >
-                      <span className="material-icons-round text-base">close</span>
-                    </button>
-                  </div>
+                      <span className="material-icons-round text-lg" style={{ color: "#64748b" }}>
+                        search
+                      </span>
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Buscar un producto..."
+                        className="bg-transparent outline-none text-sm flex-1 text-body"
+                        style={{ color: "#0f172a", minWidth: 140 }}
+                        autoComplete="off"
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchValue("");
+                          setSuggestions([]);
+                          setSearchOpen(false);
+                        }}
+                        className="rounded-full p-1 transition-colors"
+                        style={{ color: "#64748b" }}
+                        aria-label="Cerrar búsqueda"
+                      >
+                        <span className="material-icons-round text-base">close</span>
+                      </button>
+                    </div>
+                  </form>
 
+                  {/* Sugerencias: posicionadas fuera del form, ancladas debajo del buscador. 
+                      No afecta el centrado vertical del wrapper padre porque es position:absolute. */}
                   {searchValue.trim() && (
-                    <div className="max-h-75 overflow-y-auto">
+                    <div
+                      className="absolute left-0 right-0 top-full mt-2 rounded-2xl border shadow-2xl overflow-hidden text-body max-h-75 overflow-y-auto"
+                      style={{ background: "#ffffff", borderColor: "rgba(17,24,39,0.12)" }}
+                    >
                       {searchLoading ? (
                         <div className="p-4 text-center text-sm" style={{ color: "#64748b" }}>
                           Buscando...
                         </div>
                       ) : suggestions.length > 0 ? (
                         suggestions.map((prod) => {
-                          let href = `/product-detail?id=${prod.id}`;
+                          let href = `/product-detail/${String(prod.nombre || prod.id).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
                           if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
                           return (
                             <a
@@ -304,7 +410,7 @@ export const Navbar = () => {
                       )}
                     </div>
                   )}
-                </form>
+                </div>
               )}
             </div>
             <div className="relative flex flex-col items-center">
@@ -316,10 +422,7 @@ export const Navbar = () => {
               >
                 <span className="material-icons-round text-xl">shopping_cart</span>
                 {carrito && carrito.length > 0 && (
-                  <span
-                    className="absolute -top-2 -right-2 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 z-10"
-                    style={{ background: BRAND.gold, color: "#0d0d0d", borderColor: BRAND.bg }}
-                  >
+                  <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111827] z-10">
                     {carrito.length}
                   </span>
                 )}
@@ -338,8 +441,7 @@ export const Navbar = () => {
                     <img
                       src={user.photoURL}
                       alt="Foto de perfil"
-                      className="w-9 h-9 rounded-full object-cover border-2"
-                      style={{ borderColor: BRAND.gold }}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-white"
                     />
                   ) : (
                     <span className="material-icons-round text-3xl text-white">
@@ -383,15 +485,19 @@ export const Navbar = () => {
                   </div>
                 )}
               </div>
+
             ) : null}
+
+            
           </div>
         </div>
 
-        <div className="hidden items-center justify-center gap-1 px-6 border-t flex-wrap" style={{ borderColor: BRAND.border }}>
+        <div className="hidden items-center justify-center gap-1 px-6 border-t flex-wrap" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+          {/* Categorías dinámicas */}
           {/* Categorías dinámicas */}
           {categorias.map((cat) => (
-            <div
-              key={cat.id}
+            <div 
+              key={cat.id} 
               className="relative group shrink-0"
               onMouseEnter={() => windowWidth !== null && windowWidth >= 1024 && setOpenCatId(cat.id)}
               onMouseLeave={() => windowWidth !== null && windowWidth >= 1024 && setOpenCatId(null)}
@@ -399,14 +505,14 @@ export const Navbar = () => {
               {cat.subcategorias?.length > 0 ? (
                 <button
                   onClick={() => setOpenCatId(openCatId === cat.id ? null : cat.id)}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
-                    <span className="material-icons-round" style={{ fontSize: 15, color: BRAND.gold }}>{cat.icono}</span>
+                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
                   )}
-                  <span className="text-white">{cat.nombre}</span>
+                  <span className="dark:text-white">{cat.nombre}</span>
                   <span
-                    className="material-icons-round text-white transition-transform duration-200"
+                    className="material-icons-round dark:text-white transition-transform duration-200"
                     style={{ fontSize: 14, transform: openCatId === cat.id ? "rotate(180deg)" : "rotate(0deg)" }}
                   >
                     arrow_drop_down
@@ -415,22 +521,21 @@ export const Navbar = () => {
               ) : (
                 <Link
                   href={`${basePath}?cat=${cat.id}`}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
-                    <span className="material-icons-round" style={{ fontSize: 15, color: BRAND.gold }}>{cat.icono}</span>
+                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
                   )}
-                  <span className="text-white">{cat.nombre}</span>
+                  <span className="dark:text-white">{cat.nombre}</span>
                 </Link>
               )}
 
               {/* Dropdown nivel 1 */}
               {cat.subcategorias?.length > 0 && (
                 <div
-                  className="absolute left-0 top-full min-w-52 rounded-2xl border hover:text-black shadow-xl py-1.5 z-50"
+                  className="absolute left-0 top-full min-w-52 rounded-2xl border hover:text-black shadow-xl py-1.5 z-50 bg-white dark:bg-[#181028]"
                   style={{
-                    background: BRAND.bgSoft,
-                    borderColor: BRAND.border,
+                    borderColor: "var(--border)",
                     opacity: openCatId === cat.id ? "1" : "0",
                     pointerEvents: openCatId === cat.id ? "auto" : "none",
                     transform: openCatId === cat.id ? "translateY(0)" : "translateY(-10px)",
@@ -438,33 +543,30 @@ export const Navbar = () => {
                   }}
                 >
                   {cat.subcategorias.map((sub: any) => (
-                    <div
-                      key={sub.id}
+                    <div 
+                      key={sub.id} 
                       className="relative group/sub"
                       onMouseEnter={() => windowWidth !== null && windowWidth >= 1024 && setOpenSubId(sub.id)}
                       onMouseLeave={() => windowWidth !== null && windowWidth >= 1024 && setOpenSubId(null)}
                     >
                       {sub.subcategorias?.length > 0 ? (
-                        <>
-                          <button
-                            onClick={() => setOpenSubId(openSubId === sub.id ? null : sub.id)}
-                            className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-shadow hover:shadow-sm rounded-md"
+                        <button
+                          onClick={() => setOpenSubId(openSubId === sub.id ? null : sub.id)}
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-shadow text-slate-900 hover:shadow-sm rounded-md"
+                        >
+                          <span className="text-slate-900 group-hover/sub:text-black transition-colors">{sub.nombre}</span>
+                          <span 
+                            className="material-icons-round text-sm text-slate-500 hover:text-black transition-transform duration-200"
+                            style={{ transform: openSubId === sub.id ? "rotate(90deg)" : "rotate(0deg)" }}
                           >
-                            <span style={{ color: BRAND.white }} className="group-hover/sub:opacity-80 transition-opacity">{sub.nombre}</span>
-                            <span
-                              className="material-icons-round text-sm transition-transform duration-200"
-                              style={{ color: BRAND.gold, transform: openSubId === sub.id ? "rotate(90deg)" : "rotate(0deg)" }}
-                            >
-                              chevron_right
-                            </span>
-                          </button>
+                            chevron_right
+                          </span>
 
-                          {/* Dropdown nivel 2 — sibling del botón, no anidado dentro (evita <a> dentro de <button>) */}
+                          {/* Dropdown nivel 2 */}
                           <div
-                            className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60"
+                            className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60 bg-white hover:text-black"
                             style={{
-                              background: BRAND.bgSoft,
-                              borderColor: BRAND.border,
+                              borderColor: "var(--border)",
                               opacity: openSubId === sub.id ? "1" : "0",
                               pointerEvents: openSubId === sub.id ? "auto" : "none",
                               transform: openSubId === sub.id ? "translateX(0)" : "translateX(-10px)",
@@ -475,21 +577,19 @@ export const Navbar = () => {
                               <Link
                                 key={subsub.id}
                                 href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                                className="block px-4 py-2.5 text-sm transition-colors"
-                                style={{ color: BRAND.white }}
+                                className="block px-4 py-2.5 text-sm hover:text-black transition-colors text-slate-900"
                               >
-                                <span className="hover:opacity-80">{subsub.nombre}</span>
+                                <span className="hover:text-black">{subsub.nombre}</span>
                               </Link>
                             ))}
                           </div>
-                        </>
+                        </button>
                       ) : (
                         <Link
                           href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                          className="block px-4 py-2.5 text-sm transition-shadow hover:shadow-sm rounded-md"
-                          style={{ color: BRAND.white }}
+                          className="block px-4 py-2.5 text-sm transition-shadow text-slate-900 hover:shadow-sm rounded-md"
                         >
-                          <span className="group-hover/sub:opacity-80 transition-opacity">{sub.nombre}</span>
+                          <span className="group-hover/sub:text-black transition-colors">{sub.nombre}</span>
                         </Link>
                       )}
                     </div>
@@ -500,11 +600,11 @@ export const Navbar = () => {
           ))}
         </div>
       </nav>
- 
+
       {/* ══════════════════ MOBILE DRAWER ══════════════════ */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm mb-12"
+          className="fixed inset-0 z-[100000] bg-black/50 backdrop-blur-sm mb-12"
           onClick={() => setMobileOpen(false)}
         >
           <div
@@ -515,13 +615,10 @@ export const Navbar = () => {
             {/* Header drawer */}
             <div
               className="flex items-center justify-between px-5 py-4 border-b"
-              style={{ borderColor: BRAND.border }}
+              style={{ borderColor: "rgba(255,255,255,0.1)" }}
             >
-              <span
-                className="font-bold text-base"
-                style={{ color: "#ffffff", letterSpacing: "0.08em" }}
-              >
-                Central de <span style={{ color: BRAND.gold }}>Florerias</span>
+                              <span className="font-bold text-base" style={{ color: "#ffffff" }}>
+                Importadora Atlas
               </span>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -531,12 +628,12 @@ export const Navbar = () => {
                 <span className="material-icons-round text-xl">close</span>
               </button>
             </div>
- 
+
             <div className="flex-1 px-4 py-4 flex flex-col gap-1">
               {/* Búsqueda móvil */}
               <form
                 className="relative flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
-                style={{ background: "rgba(201, 162, 39, 0.08)", borderColor: BRAND.border }}
+                style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.2)" }}
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (searchValue.trim()) {
@@ -545,7 +642,7 @@ export const Navbar = () => {
                   }
                 }}
               >
-                <span className="material-icons-round text-lg" style={{ color: "#ffffff" }}>
+                                  <span className="material-icons-round text-lg" style={{ color: "#ffffff" }}>
                   search
                 </span>
                 <input
@@ -558,13 +655,14 @@ export const Navbar = () => {
                   onChange={(e) => setSearchValue(e.target.value)}
                   autoComplete="off"
                 />
- 
+
+                {/* Dropdown sugerencias móvil */}
                 {searchValue.trim() && (
                   <div
                     className="absolute left-0 top-full mt-1 w-full rounded-xl border shadow-xl z-50 overflow-hidden"
                     style={{
                       background: "#000000",
-                      borderColor: BRAND.border,
+                      borderColor: "rgba(255,255,255,0.2)",
                       maxHeight: 300,
                       overflowY: "auto",
                     }}
@@ -575,7 +673,7 @@ export const Navbar = () => {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((prod) => {
-                        let href = `/product-detail?id=${prod.id}`;
+                        let href = `/product-detail/${String(prod.nombre || prod.id).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
                         if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
                         return (
                           <a
@@ -598,7 +696,7 @@ export const Navbar = () => {
                             )}
                             <span className="truncate flex-1">{prod.nombre}</span>
                             {prod.marca && (
-                              <span className="text-xs shrink-0" style={{ color: "rgba(255,255,255,0.5)" }}>
+                              <span className="text-xs shrink-0" style={{ color: "rgba(255,255,255,0.6)" }}>
                                 {prod.marca}
                               </span>
                             )}
@@ -613,7 +711,7 @@ export const Navbar = () => {
                   </div>
                 )}
               </form>
- 
+
               {/* Links */}
               {links.map((link) => (
                 <a
@@ -625,11 +723,15 @@ export const Navbar = () => {
                   {link.label}
                 </a>
               ))}
- 
+
               {/* Categorías en acordeón */}
- 
-              <div className="border-t my-2" style={{ borderColor: BRAND.border }} />
- 
+              <MobileCategoriesAccordion basePath={basePath} />
+
+              {/* Divisor */}
+              <div className="border-t my-2" style={{ borderColor: "rgba(255,255,255,0.1)" }} />
+              <div className="border-t my-2" style={{ borderColor: "rgba(255,255,255,0.1)" }} />
+
+              {/* Usuario - Opciones si está autenticado */}
               {user && (
                 <>
                   <a
@@ -666,6 +768,7 @@ export const Navbar = () => {
           </div>
         </div>
       )}
+
     </>
   );
 };

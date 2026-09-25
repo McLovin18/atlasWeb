@@ -7,37 +7,7 @@ import type {
   FieldPosition,
 } from "../../lib/landing-types";
 
-// ── Hook ────────────────────────────────────────────────────────────────────
-function useGoogleMapsPlaceDetails(placeId?: string, enabled?: boolean) {
-  const [data, setData] = React.useState<{
-    rating?: number;
-    user_ratings_total?: number;
-  } | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (!enabled || !placeId) return;
-    setLoading(true);
-    setError(null);
-    fetch(`/api/google-maps?place_id=${placeId}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (
-          typeof json.rating !== "undefined" &&
-          typeof json.ratingCount !== "undefined"
-        ) {
-          setData({ rating: json.rating, user_ratings_total: json.ratingCount });
-        } else {
-          setError(json.error || "No se pudo obtener la información de Google Maps");
-        }
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [placeId, enabled]);
-
-  return { data, loading, error };
-}
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 type HeroItem = {
@@ -184,16 +154,49 @@ export default function HeroSection({
       return;
     }
 
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768); // md breakpoint
+    // Debounce resize para mejorar rendimiento en iOS
+    let timeoutId: NodeJS.Timeout;
+    const checkDesktop = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setIsDesktop(window.innerWidth >= 768), 150);
+    };
+    
     checkDesktop();
     window.addEventListener("resize", checkDesktop);
-    return () => window.removeEventListener("resize", checkDesktop);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", checkDesktop);
+    };
   }, [device]);
 
   const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID;
-  const hasGoogleMaps =
-    googleMaps || (items && items.some((i) => i.googleMaps));
-  const { data: googleMapsData } = useGoogleMapsPlaceDetails(placeId, hasGoogleMaps);
+  const hasGoogleMaps = Boolean(
+    googleMaps || (items && items.some((i) => i.googleMaps))
+  );
+  
+  // Google Maps data - integrado directamente para evitar problemas de Hooks
+  const [googleMapsData, setGoogleMapsData] = React.useState<{
+    rating?: number;
+    user_ratings_total?: number;
+  } | null>(null);
+  
+  React.useEffect(() => {
+    if (!hasGoogleMaps || !placeId) return;
+    
+    fetch(`/api/google-maps?place_id=${placeId}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (
+          typeof json.rating !== "undefined" &&
+          typeof json.ratingCount !== "undefined"
+        ) {
+          setGoogleMapsData({ rating: json.rating, user_ratings_total: json.ratingCount });
+        }
+      })
+      .catch(() => {
+        // Silenciar errores de Google Maps
+      });
+  }, [placeId, hasGoogleMaps]);
 
   // ── TODOS los hooks antes de cualquier return condicional ────────────────
   const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -260,12 +263,46 @@ export default function HeroSection({
     }
   }, [currentIndex, heroItems]);
 
+  // Screen type detection para aspect ratio
+  const [screenType, setScreenType] = React.useState<"mobile" | "tablet" | "desktop">("desktop");
+
+  React.useEffect(() => {
+    // Debounce resize para mejorar rendimiento en iOS
+    let timeoutId: NodeJS.Timeout;
+    const update = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const w = window.innerWidth;
+        if (w < 640) setScreenType("mobile");
+        else if (w < 1024) setScreenType("tablet");
+        else setScreenType("desktop");
+      }, 150);
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
   // ── Return condicional DESPUÉS de todos los hooks ────────────────────────
   if (!heroItems.length) return null;
 
   const current = heroItems[Math.min(currentIndex, heroItems.length - 1)];
   const currentFieldStyles = current.fieldStyles || {};
   const currentFieldPositions = current.fieldPositions || fieldPositions || {};
+
+  const innerStyle: React.CSSProperties = {
+    aspectRatio:
+      screenType === "mobile"
+        ? "6 / 5"
+        : screenType === "tablet"
+        ? "14 / 9"
+        : "2400 / 1000",
+    overflow: "hidden",
+  };
 
   // debug logs removed
 
@@ -346,33 +383,7 @@ export default function HeroSection({
   };
 
 
-  const [screenType, setScreenType] = React.useState<"mobile" | "tablet" | "desktop">("desktop");
 
-
-
-React.useEffect(() => {
-  const update = () => {
-    const w = window.innerWidth;
-
-    if (w < 640) setScreenType("mobile");
-    else if (w < 1024) setScreenType("tablet");
-    else setScreenType("desktop");
-  };
-
-  update();
-  window.addEventListener("resize", update);
-  return () => window.removeEventListener("resize", update);
-}, []);
-
-const innerStyle: React.CSSProperties = {
-  aspectRatio:
-    screenType === "mobile"
-      ? "6 / 3"
-      : screenType === "tablet"
-      ? "11 / 4"
-      : "2400 / 650",
-  overflow: "hidden",
-};
 
 
   return (
@@ -391,10 +402,10 @@ const innerStyle: React.CSSProperties = {
           alt={current.title || "Hero"}
           width={1920}
           height={840}
-          loading="eager"
+          loading="lazy"
           decoding="async"
           className="w-full h-full object-cover block"
-          style={{display: "block" }}
+          style={{display: "block", willChange: "transform"}}
           draggable={false}
         />
 
@@ -502,44 +513,39 @@ const innerStyle: React.CSSProperties = {
 
         {/* Contenido textual por defecto (sin posicionamiento personalizado) */}
         {!fieldPositions?.badge && !fieldPositions?.title && !fieldPositions?.subtitle && (
-          <div className="absolute left-0 right-0 bottom-1 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
-            <div className="absolute sm:bottom-40 bottom-10">
-                {current.badge && (
-                  <span
-                    className="inline-block px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
-                    style={{ ...defaultBadgeInlineStyle, ...badgeStyle }}
-                  >
-                    {current.badge}
-                  </span>
-                )}
-                {current.title && (
-                  <h2
-                    className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
-                    style={{ ...defaultTitleInlineStyle, ...titleStyle }}
-                  >
-                    {current.title}
-                  </h2>
-                )}
-                {current.subtitle && (
-                  <p
-                    className="text-white/80 text-[9px] sm:text-sm max-w-[90vw] sm:max-w-2xl drop-shadow"
-                    style={{ ...defaultSubtitleInlineStyle, ...subtitleStyle }}
-                  >
-                    {current.subtitle}
-                  </p>
-                )}
-            </div>
-
+          <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center sm:items-center lg:items-start px-2 sm:px-8 pb-5 sm:pb-8 gap-1.5 sm:gap-3 w-full">
+            {current.badge && (
+              <span
+                className="px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
+                style={{ ...defaultBadgeInlineStyle, ...badgeStyle }}
+              >
+                {current.badge}
+              </span>
+            )}
+            {current.title && (
+              <h2
+                className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-none max-w-full drop-shadow-lg whitespace-nowrap text-center sm:text-center lg:text-left"
+                style={{ ...defaultTitleInlineStyle, ...titleStyle, transform: 'none' }}
+              >
+                {current.title}
+              </h2>
+            )}
+            {current.subtitle && (
+              <p
+                className="w-full text-white/80 text-[9px] sm:text-sm drop-shadow text-left"
+                style={{ ...defaultSubtitleInlineStyle, ...subtitleStyle }}
+              >
+                {current.subtitle}
+              </p>
+            )}
             {current.buttonText && (
-              <div className="w-full flex justify-center sm:py-3 pb-5">
-                <a
-                  href={current.buttonLink || "/products-by-category"}
-                  className="inline-flex items-centersm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                  style={{ ...defaultButtonInlineStyle, ...buttonTextStyle }}
-                >
-                  <span>{current.buttonText}</span>
-                </a>
-              </div>
+              <a
+                href={current.buttonLink || "/products-by-category"}
+                className="inline-flex items-center gap-2 mt-3 sm:mt-6 bg-white/95 hover:bg-white mx-auto text-black font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+                style={{ ...defaultButtonInlineStyle, ...buttonTextStyle }}
+              >
+                <span>{current.buttonText}</span>
+              </a>
             )}
           </div>
         )}

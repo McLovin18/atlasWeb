@@ -6,8 +6,9 @@ import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
-import { useToast } from "../context/ToastContext";
 import { getCatalogPricing } from "../lib/pricing";
+
+
 
 const cardStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Barlow:wght@400;500;600;700&display=swap');
@@ -32,38 +33,42 @@ const cardStyles = `
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background: var(--card);
+    background: #000000;
     overflow: hidden;
     cursor: pointer;
-    border: 1px solid var(--border);
+    border: 1px solid black;
     transition: border-color 0.25s, box-shadow 0.25s;
   }
 
   .pc-card:hover {
-    border-color: var(--secondary);
-    box-shadow: 0 8px 40px color-mix(in srgb, var(--primary) 14%, transparent);
+    border-color: #7B9BC0;
+    box-shadow: 0 8px 40px rgba(212,175,55,0.18);
   }
 
   /* ── imagen ── */
+  /* Wide/landscape: más ancho que alto, para que no sobre espacio
+     vertical alrededor de la imagen del producto. */
   .pc-img-wrap {
     position: relative;
     width: 100%;
-    /* aspect-ratio cuadrado en mobile, más alto en desktop */
-    aspect-ratio: 1 / 1.05;
-    background: var(--galleryImgBg);
+    aspect-ratio: 4 / 4;
+    background: #0a0a0a;
     overflow: hidden;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  @media (min-width: 640px) {
-    .pc-img-wrap {
-      aspect-ratio: 3 / 3.8;
-    }
-  }
-
+  /* Altura siempre llena el contenedor; el ancho se ajusta de forma
+     proporcional (sin recorte ni estiramiento). max-width evita que
+     una imagen muy ancha se salga del contenedor. */
   .pc-img-wrap img {
+    height: 100% !important;
+    width: auto !important;
+    max-width: 100% !important;
     object-fit: contain !important;
-    padding: 8% !important;
+    padding: 0 !important;
     transition: transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94) !important;
   }
 
@@ -77,8 +82,8 @@ const cardStyles = `
     top: 10px;
     left: 10px;
     z-index: 10;
-    background: var(--secondary);
-    color: var(--secondaryForeground);
+    background: #7B9BC0;
+    color: #000000;
     font-family: 'Barlow', sans-serif;
     font-size: 10px;
     font-weight: 700;
@@ -92,7 +97,7 @@ const cardStyles = `
     position: absolute;
     inset: 0;
     z-index: 10;
-    background: rgba(245,245,243,0.72);
+    background: rgba(0,0,0,0.75);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -104,9 +109,9 @@ const cardStyles = `
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--mutedForeground);
-    background: var(--card);
-    border: 1px solid var(--border);
+    color: #ffffff;
+    background: #000000;
+    border: 1px solid #7B9BC0;
     padding: 5px 12px;
     border-radius: 2px;
   }
@@ -121,7 +126,8 @@ const cardStyles = `
     height: 30px;
     border-radius: 50%;
     border: none;
-    background: rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.6);
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -135,8 +141,8 @@ const cardStyles = `
   .pc-fav.is-fav {
     opacity: 1;
     transform: scale(1);
-    background: var(--secondary);
-    color: var(--secondaryForeground);
+    background: #7B9BC0;
+    color: #000000;
   }
 
   .pc-card:hover .pc-fav {
@@ -144,33 +150,36 @@ const cardStyles = `
     transform: scale(1);
   }
 
-  /* ── barra info inferior — tono oscuro degradado tipo carbón ── */
+  /* ── info ── */
+  /* min-height fijo: así todas las cards miden lo mismo aunque
+     el producto "visual only" no muestre precio */
   .pc-info {
-    background: radial-gradient(circle at 32% 38%, #262626 0%, #161616 45%, #0a0a0a 100%);
-    color: var(--primaryForeground);
     padding: 10px 12px 12px;
     display: flex;
     flex-direction: column;
     gap: 3px;
     flex: 1;
+    min-height: 40px;
   }
 
   @media (min-width: 640px) {
     .pc-info {
       padding: 14px 16px 16px;
+      min-height: 52px;
     }
   }
 
-  /* nombre — cursiva serif como en la imagen */
+  /* nombre */
   .pc-name {
-
     color: #ffffff;
-
+    transition: color 0.25s ease;
+    font-size: 12px;
+    font-weight: 700;
   }
 
   @media (min-width: 640px) {
     .pc-name {
-      font-size: 15px;
+    font-size: 22px;
     }
   }
 
@@ -189,6 +198,7 @@ const cardStyles = `
     font-size: 13px;
     color: #ffffff;
     letter-spacing: 0.02em;
+    transition: color 0.25s ease;
   }
 
   @media (min-width: 640px) {
@@ -203,6 +213,7 @@ const cardStyles = `
     font-size: 11px;
     color: rgba(255,255,255,0.35);
     text-decoration: line-through;
+    transition: color 0.25s ease;
   }
 
   .pc-price-currency {
@@ -211,112 +222,41 @@ const cardStyles = `
     opacity: 0.6;
   }
 
-  /* ── botones acción — mini row en fondo negro ── */
-  .pc-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 8px;
-  }
-
-  .pc-btn-cart {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    height: 30px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: transparent;
-    color: #fff;
-    font-family: 'Barlow', sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-  }
-
-  .pc-btn-cart:hover:not(:disabled) {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.5);
-  }
-
-  .pc-btn-cart:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .pc-btn-cart.in-cart {
-    border-color: var(--secondary);
-    color: var(--secondary);
-  }
-
-  .pc-btn-eye {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: transparent;
-    color: #fff;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-  }
-
-  .pc-btn-eye:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.5);
+  /* ── hover: todo el texto a dorado ── */
+  .pc-card:hover .pc-name,
+  .pc-card:hover .pc-price-final,
+  .pc-card:hover .pc-price-old {
+    color: #7B9BC0;
   }
 `;
 
 function ProductoCard({
   producto,
   onClick,
-  showCart = false,
-  showEye = true,
-  onAddCart,
-  onEye,
   showFav = false,
   isCompact = true,
   index = 0,
 }: {
   producto?: any;
   onClick?: any;
-  showCart?: boolean;
-  showEye?: boolean;
-  onAddCart?: any;
-  onEye?: any;
   showFav?: boolean;
   index?: number;
   isCompact?: boolean;
 } = {}): JSX.Element | null {
   if (!producto || !producto.id) return null;
 
-  const {
-    isLogged,
-    isAdmin,
-    favoritos,
-    addFavorito,
-    removeFavorito,
-    carrito,
-    addCarrito,
-    removeCarrito,
-  } = useUser();
+  const { isLogged, isAdmin, favoritos, addFavorito, removeFavorito } = useUser();
   const router = useRouter();
   const { trackProductClick } = useTracking();
-  const { showToast } = useToast();
-
+  const primeraImagenTieneWatermark = Boolean(producto.imagenesWatermark?.[0]);
   const isFav = favoritos?.some((p) => p.id === producto.id);
-  const inCart = carrito?.some((p) => p.id === producto.id);
+
+
+  const isVisualOnlyProduct =
+  producto.categoria === "1785564342207";
 
   const hasVariations =
     producto?.hasVariations || producto?.isCamiseta || false;
-  const variationAttributeIds = producto?.variationAttributeIds || [];
   const stockVariants = producto?.stockVariants || [];
 
   const totalStock = hasVariations
@@ -324,7 +264,7 @@ function ProductoCard({
     : producto?.stock || 0;
   const sinStock = totalStock === 0;
 
-  const { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice } =
+  const { discount, hasDiscount, fakeOldPrice, finalPrice } =
     getCatalogPricing(producto);
 
   const getDetailUrl = () => {
@@ -355,43 +295,6 @@ function ProductoCard({
     isFav ? removeFavorito(producto.id) : addFavorito(producto);
   };
 
-  const handleCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (sinStock) return;
-
-    if (hasVariations && variationAttributeIds.length > 0) {
-      showToast("Selecciona las opciones en el detalle del producto", "info");
-      router.push(detailUrl);
-      return;
-    }
-
-    if (onAddCart) {
-      onAddCart({
-        ...producto,
-        precioBase: basePrice,
-        precioUnitario: finalPrice,
-        descuento: hasDiscount ? discount : 0,
-      });
-      showToast("Añadido al carrito", "success");
-      return;
-    }
-
-    if (inCart) {
-      removeCarrito(producto.id);
-      showToast("Eliminado del carrito", "info");
-    } else {
-      addCarrito({
-        ...producto,
-        cantidad: 1,
-        precioBase: basePrice,
-        precioUnitario: finalPrice,
-        descuento: hasDiscount ? discount : 0,
-      });
-      showToast(`${producto.nombre} añadido al carrito`, "success");
-    }
-  };
-
   return (
     <>
       <style>{cardStyles}</style>
@@ -407,22 +310,8 @@ function ProductoCard({
         <div className="pc-card" onClick={onClick || goToDetail}>
           {/* ── IMAGEN ── */}
           <div className="pc-img-wrap">
-            <Image
-              src={producto.imagenes?.[0] || "/no-image.png"}
-              alt={producto.nombre}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain"
-              style={{
-                opacity: 0,
-                transition: "opacity 0.4s ease",
-              }}
-              onLoad={(e) => {
-                (e.currentTarget as HTMLImageElement).style.opacity = "1";
-              }}
-              priority={index < 4}
-              loading={index < 4 ? "eager" : "lazy"}
-            />
+
+
 
             {/* Badge descuento */}
             {hasDiscount && (
@@ -437,7 +326,7 @@ function ProductoCard({
             )}
 
             {/* Favorito */}
-            {isLogged && (
+            {isLogged && showFav && (
               <button
                 onClick={handleFav}
                 className={`pc-fav${isFav ? " is-fav" : ""}`}
@@ -450,55 +339,22 @@ function ProductoCard({
             )}
           </div>
 
-          {/* ── INFO BARRA NEGRA ── */}
+          {/* ── INFO ── */}
           <div className="pc-info">
-            <p className="pc-name">{producto.nombre}</p>
+            <span className="pc-name">{producto.nombre}</span>
 
-            <div className="pc-prices">
-              {hasDiscount && (
-                <span className="pc-price-old">
-                  ${fakeOldPrice.toFixed(2)}
+            {!isVisualOnlyProduct && (
+              <div className="pc-prices">
+                {hasDiscount && (
+                  <span className="pc-price-old">
+                    ${fakeOldPrice.toFixed(2)}
+                  </span>
+                )}
+
+                <span className="pc-price-final">
+                  ${finalPrice.toFixed(2)}{" "}
+                  <span className="pc-price-currency">USD</span>
                 </span>
-              )}
-              <span className="pc-price-final">
-                ${finalPrice.toFixed(2)}{" "}
-                <span className="pc-price-currency">USD</span>
-              </span>
-            </div>
-
-            {(showCart || showEye) && (
-              <div className="pc-actions">
-                {showCart && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (!sinStock) handleCart(e);
-                    }}
-                    disabled={sinStock}
-                    className={`pc-btn-cart${inCart ? " in-cart" : ""}`}
-                  >
-                    <span className="material-icons-round" style={{ fontSize: 13 }}>
-                      {inCart ? "remove_shopping_cart" : "add_shopping_cart"}
-                    </span>
-                    {inCart ? "Quitar" : "Añadir"}
-                  </button>
-                )}
-                {showEye && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onEye ? onEye(producto) : goToDetail(e);
-                    }}
-                    className="pc-btn-eye"
-                    title="Ver detalle"
-                  >
-                    <span className="material-icons-round" style={{ fontSize: 15 }}>
-                      visibility
-                    </span>
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -511,8 +367,6 @@ function ProductoCard({
 export default React.memo(ProductoCard, (prevProps, nextProps) => {
   return (
     prevProps.producto.id === nextProps.producto.id &&
-    prevProps.showCart === nextProps.showCart &&
-    prevProps.showEye === nextProps.showEye &&
     prevProps.showFav === nextProps.showFav
   );
 });

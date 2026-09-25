@@ -7,6 +7,7 @@ const adminItems = [
   { name: "Dashboard", path: "/admin", icon: "dashboard" },
   { name: "Inventario", path: "/admin/inventario", icon: "inventory" },
   { name: "Landing", path: "/admin/edit-landing", icon: "edit" },
+  { name: "Blogs", path: "/admin/edit-blogs", icon: "library_books" },
   { name: "Perfil", path: "/admin/perfil", icon: "person" },
   { name: "Config", path: "/admin/config", icon: "settings" },
 ];

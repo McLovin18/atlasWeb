@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     title: "Importadora Atlas| tecnología que simplifica tu vida",
 
     description:
-      "Pronósticos deportivos y cuotas en vivo para las principales ligas de fútbol, baloncesto y tenis.",
+      "Tecnología que simplifica tu vida. Venta de productos tecnológicos.",
 
     images: [
       {

@@ -19,7 +19,7 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   "https://goldbet.com.ec";
 
-const SITE_NAME = "GoldBet Ecuador";
+const SITE_NAME = "Importadora Atlas";
 
 const barlowCondensed = Barlow_Condensed({
   subsets: ["latin"],
@@ -30,22 +30,17 @@ const barlowCondensed = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: {
-    default: "GoldBet Ecuador | Pronósticos deportivos y cuotas en vivo",
-    template: "%s | GoldBet Ecuador",
+    default: "Importadora Atlas | Tecnología que simplifica tu vida",
+    template: "%s | Atlas",
   },
 
   description:
-    "Pronósticos deportivos, cuotas en vivo y análisis de partidos de fútbol, baloncesto y tenis en Ecuador. Sigue las mejores ligas con GoldBet.",
+    "Tecnología que simplifica tu vida.",
 
   keywords: [
-    "pronósticos deportivos Ecuador",
-    "apuestas deportivas Ecuador",
-    "cuotas en vivo",
-    "pronósticos de fútbol",
-    "quinielas Ecuador",
-    "análisis de partidos",
-    "casas de apuestas Ecuador",
-    "GoldBet",
+    "Venta de aparatos tecnológicos",
+    "Venta de tecnología",
+
   ],
 
   creator: SITE_NAME,
@@ -68,7 +63,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: SITE_NAME,
 
-    title: "GoldBet Ecuador | Pronósticos deportivos",
+    title: "Importadora Atlas| tecnología que simplifica tu vida",
 
     description:
       "Pronósticos deportivos y cuotas en vivo para las principales ligas de fútbol, baloncesto y tenis.",

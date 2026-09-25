@@ -297,10 +297,10 @@ export default function HeroSection({
   const innerStyle: React.CSSProperties = {
     aspectRatio:
       screenType === "mobile"
-        ? "6 / 5"
+        ? "6 / 4"
         : screenType === "tablet"
         ? "14 / 9"
-        : "2400 / 700",
+        : "2400 / 1000",
     overflow: "hidden",
   };
 

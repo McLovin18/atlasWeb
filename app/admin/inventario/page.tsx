@@ -203,13 +203,13 @@ export default function AdminInventario() {
             </div>
 
             {/* FILTRO STOCK */}
-            <div className="flex gap-2 mb-4 flex-wrap">
+            <div className="flex gap-2 mb-4 flex-wrap text-black">
               <button
                 onClick={() => setFiltroStock("todos")}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
                   filtroStock === "todos"
-                    ? "bg-slate-700 text-white border-slate-700"
-                    : "bg-white text-slate-700 border-slate-400 hover:bg-slate-100"
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black border-black hover:bg-slate-100"
                 }`}
               >
                 Todos ({resumen.total})
@@ -218,8 +218,8 @@ export default function AdminInventario() {
                 onClick={() => setFiltroStock("con-stock")}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
                   filtroStock === "con-stock"
-                    ? "bg-green-600 text-white border-green-600"
-                    : "bg-white text-green-700 border-green-500 hover:bg-green-50"
+                    ? "bg-green-600 text-white border-black"
+                    : "bg-white text-black border-black hover:bg-green-50"
                 }`}
               >
                 Con stock ({resumen.conStock})
@@ -228,8 +228,8 @@ export default function AdminInventario() {
                 onClick={() => setFiltroStock("poco-stock")}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
                   filtroStock === "poco-stock"
-                    ? "bg-amber-500 text-white border-amber-500"
-                    : "bg-white text-amber-700 border-amber-500 hover:bg-amber-50"
+                    ? "bg-amber-500 text-white border-black"
+                    : "bg-white text-black border-black hover:bg-amber-50"
                 }`}
               >
                 Poco stock ({resumen.pocoStock})
@@ -238,8 +238,8 @@ export default function AdminInventario() {
                 onClick={() => setFiltroStock("sin-stock")}
                 className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
                   filtroStock === "sin-stock"
-                    ? "bg-red-600 text-white border-red-600"
-                    : "bg-white text-red-700 border-red-500 hover:bg-red-50"
+                    ? "bg-red-600 text-white border-black"
+                    : "bg-white text-black border-black hover:bg-red-50"
                 }`}
               >
                 Sin stock ({resumen.sinStock})
@@ -247,14 +247,14 @@ export default function AdminInventario() {
             </div>
 
             {/* BARRA DE FILTROS PRINCIPAL */}
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="flex items-center gap-3 mb-4 flex-wrap text-black">
               <div className="flex-1 min-w-55">
                 <div className="relative">
-                  <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
+                  <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-lg text-black">search</span>
                   <input
                     type="text"
                     placeholder="Título, cód. de barras o SKU"
-                    className="pl-10 pr-4 py-2 rounded-lg border w-full"
+                    className="pl-10 pr-4 py-2 rounded-lg border border-black text-black placeholder:text-black w-full"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
@@ -262,7 +262,7 @@ export default function AdminInventario() {
               </div>
 
               <div className="w-48 min-w-40">
-                <select className="px-3 py-2 rounded-lg border w-full" value={selectedCategoria ?? ""} onChange={e => { setSelectedCategoria(e.target.value || null); setSelectedSubcategoria(null); }}>
+                <select className="px-3 py-2 rounded-lg border border-black text-black w-full" value={selectedCategoria ?? ""} onChange={e => { setSelectedCategoria(e.target.value || null); setSelectedSubcategoria(null); }}>
                   <option value="">Categoría</option>
                   {categoriasUnicas.map(c => (
                     <option key={c} value={c}>{formatCategoria(c)}</option>
@@ -271,7 +271,7 @@ export default function AdminInventario() {
               </div>
 
               <div className="w-48 min-w-40">
-                <select className="px-3 py-2 rounded-lg border w-full" value={selectedSubcategoria ?? ""} onChange={e => setSelectedSubcategoria(e.target.value || null)}>
+                <select className="px-3 py-2 rounded-lg border border-black text-black w-full" value={selectedSubcategoria ?? ""} onChange={e => setSelectedSubcategoria(e.target.value || null)}>
                   <option value="">Subcategoría</option>
                   {subcategoriasDisponibles.map(s => (
                     <option key={s} value={s}>{formatCategoria(s)}</option>
@@ -377,7 +377,7 @@ export default function AdminInventario() {
                               </label>
                             </td>
                             <td className="px-4 py-3 text-right font-bold text-amber-600 whitespace-nowrap">${Number(p.precio || 0).toFixed(2)}</td>
-                            <td className="px-6 py-3 text-right font-bold whitespace-nowrap">{stockTotal}</td>
+                            <td className="px-6 py-3 text-right font-bold text-black whitespace-nowrap">{stockTotal}</td>
                           </tr>
                         );
                       })}

@@ -254,7 +254,7 @@ export default function CategoriasAdminPanel({ onCategoriasChange }: { onCategor
                 <>
                   <input
                     type="text"
-                    className="flex-1 border rounded px-2 py-1 text-sm"
+                    className="flex-1 border rounded px-2 py-1 text-sm text-slate-900 dark:text-white bg-white dark:bg-slate-700"
                     value={editingName}
                     onChange={(e) => setEditingName(e.target.value)}
                     onKeyPress={(e) => {
@@ -342,7 +342,7 @@ export default function CategoriasAdminPanel({ onCategoriasChange }: { onCategor
       <div className="flex gap-2 mb-4 flex-wrap">
         <input
           type="text"
-          className="flex-1 border rounded px-3 py-2 min-w-[200px]"
+          className="flex-1 border rounded px-3 py-2 min-w-[200px] text-slate-900 dark:text-white bg-white dark:bg-slate-700"
           placeholder="Nueva categoría..."
           value={nuevaCategoria}
           onChange={e => setNuevaCategoria(e.target.value)}
@@ -350,7 +350,7 @@ export default function CategoriasAdminPanel({ onCategoriasChange }: { onCategor
         />
         <input
           type="text"
-          className="w-32 border rounded px-3 py-2"
+          className="w-32 border rounded px-3 py-2 text-slate-900 dark:text-white bg-white dark:bg-slate-700"
           placeholder="Icono (opcional)"
           value={nuevoIcono}
           onChange={e => setNuevoIcono(e.target.value)}

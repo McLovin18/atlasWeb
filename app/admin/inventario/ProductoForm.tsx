@@ -1,32 +1,13 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState } from "react";
 import { uploadImageAndGetUrl } from "../../lib/upload-image";
 import { obtenerCategorias } from "../../lib/categorias-db";
 import { obtenerProductos } from "../../lib/productos-db";
+import { useEffect } from "react";
 import { obtenerMarcas } from "../../lib/marcas-db";
 import { obtenerBodegas } from "../../lib/bodegas-db";
 import { obtenerAtributos, agregarValorAtributo } from "../../lib/atributos-db";
 import type { StockVariant } from "../../lib/productos-db";
-
-// ─────────────────────────────────────────────────────────────────────────
-// FIXES APLICADOS PARA MOVIL (iPhone / Android) — ver resumen al final del chat
-// 1) Las imágenes ya NO se convierten con URL.createObjectURL() en cada
-//    render. Antes se llamaba de nuevo en cada tecla que el usuario escribía,
-//    generando decenas de blobs nunca liberados -> Safari en iPhone se queda
-//    sin memoria y recarga la página (por eso "se borraba todo").
-// 2) Las fotos que vienen de la cámara del iPhone (HEIC, 3-8MB, 4032x3024)
-//    se comprimen y redimensionan en el navegador ANTES de guardarlas en el
-//    estado, así el formulario no carga varias fotos gigantes en RAM.
-// 3) El drag & drop HTML5 (draggable, onDragStart, etc.) NO funciona con
-//    el dedo en iOS/Android — solo con mouse. Se agregaron botones de
-//    "subir/bajar" que funcionan igual en touch y en desktop.
-// 4) Autoguardado del formulario (texto) en sessionStorage: si el navegador
-//    llega a recargar la pestaña por cualquier motivo, se puede recuperar
-//    lo escrito en vez de perderlo todo.
-// 5) Tamaño de fuente mínimo de 16px en todos los inputs para que iOS no
-//    haga zoom automático al enfocar un campo (eso también "se sentía" como
-//    que el formulario no cargaba bien).
-// ─────────────────────────────────────────────────────────────────────────
 
 // Componente de formulario para crear/modificar productos
 type Producto = {
@@ -40,15 +21,13 @@ type Producto = {
   precio: string;
   descuento?: number;
   categoria: string;
-  subcategoria: string;
+  subcategoria?: string;
   subsubcategoria?: string;
   marca?: string;
   imagenes: (string | File)[];
   descripcion: string;
   caracteristicas: string[];
   bodegaId?: string;
-  personalizado?: boolean;
-  camposPersonalizacion?: { id: string; nombre: string; tipo: string }[];
 };
 
 type ProductoFormProps = {
@@ -59,69 +38,9 @@ type ProductoFormProps = {
 
 type FormSection = "general" | "stock" | "photos" | "price";
 
-// Campos "de texto" que sí podemos guardar en sessionStorage (las imágenes,
-// al ser File, no se pueden serializar de forma barata, así que se excluyen
-// del autoguardado).
-type DraftFields = {
-  nombre: string;
-  sku: string;
-  stock: number;
-  precio: string;
-  descuento: string;
-  categoria: string;
-  subcategoria: string;
-  subsubcategoria: string;
-  descripcion: string;
-  caracteristicas: string[];
-  tieneMarca: boolean;
-  marca: string;
-  bodegaId: string;
-  personalizado: boolean;
-  camposPersonalizacion: { id: string; nombre: string; tipo: string }[];
-};
-
-const DRAFT_KEY = "producto-form-draft-v1";
-
-// Redimensiona/comprime una imagen en el navegador antes de guardarla en
-// memoria. Las fotos de un iPhone pueden pesar varios MB y medir miles de
-// píxeles de lado; sin esto, subir 5-6 fotos puede tumbar la pestaña.
-async function compressImageFile(file: File, maxDimension = 1600, quality = 0.82): Promise<File> {
-  // Si no es imagen (o el navegador no soporta canvas) devolvemos el original
-  if (!file.type.startsWith("image/")) return file;
-
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-    const targetWidth = Math.max(1, Math.round(bitmap.width * scale));
-    const targetHeight = Math.max(1, Math.round(bitmap.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-    bitmap.close?.();
-
-    const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob((b) => resolve(b), "image/jpeg", quality)
-    );
-    if (!blob) return file;
-
-    const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-    return new File([blob], newName, { type: "image/jpeg" });
-  } catch (err) {
-    // Si algo falla (navegador viejo, HEIC no soportado, etc.) seguimos con el original
-    console.warn("No se pudo comprimir la imagen, se usará el original", err);
-    return file;
-  }
-}
-
 export default function ProductoForm({ initialData = null, onSave, onCancel }: ProductoFormProps) {
     // Estado de carga para el submit
     const [loading, setLoading] = useState(false);
-    // Estado de carga mientras se comprimen fotos recién agregadas
-    const [procesandoImagenes, setProcesandoImagenes] = useState(false);
   // Si initialData existe, es edición, si no, es creación
   const isEdit = !!initialData;
   const [activeSection, setActiveSection] = useState<FormSection>("general");
@@ -142,43 +61,17 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [imagenes, setImagenes] = useState<(string | File)[]>(initialData?.imagenes || []);
   const [descripcion, setDescripcion] = useState<string>(initialData?.descripcion || "");
   const [caracteristicas, setCaracteristicas] = useState<string[]>(initialData?.caracteristicas || [""]);
+  const [imagenesInput, setImagenesInput] = useState<File[]>([]);
   const [tieneMarca, setTieneMarca] = useState<boolean>(Boolean(initialData?.marca));
   const [marca, setMarca] = useState<string>(initialData?.marca || "");
   const [marcas, setMarcas] = useState<{id: string; nombre?: string}[]>([]);
   const [bodegaId, setBodegaId] = useState<string>(initialData?.bodegaId || "");
   const [bodegas, setBodegas] = useState<any[]>([]);
   const [categoryPathChanged, setCategoryPathChanged] = useState(false);
+  const [draggedImageIdx, setDraggedImageIdx] = useState<number | null>(null);
+  const [hoveredImageIdx, setHoveredImageIdx] = useState<number | null>(null);
   const [atributos, setAtributos] = useState<any[]>([]);
   const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>(initialData?.variationAttributeIds || []);
-  const [personalizado, setPersonalizado] = useState<boolean>(Boolean(initialData?.personalizado));
-  const [camposPersonalizacion, setCamposPersonalizacion] = useState<{ id: string; nombre: string; tipo: string }[]>(initialData?.camposPersonalizacion || []);
-  const [draftDisponible, setDraftDisponible] = useState(false);
-
-  // ── Manejo de URLs de imagen sin fugas de memoria ──
-  // Un solo blob URL por archivo, se reutiliza en cada render y se libera
-  // apenas la imagen se quita o el componente se desmonta. Esto es lo que
-  // evita que Safari/iOS acabe recargando la página por falta de memoria.
-  const objectUrlCacheRef = useRef<Map<File, string>>(new Map());
-
-  const getPreviewUrl = useCallback((img: string | File): string => {
-    if (typeof img === "string") return img.trim() ? img : "";
-    const cache = objectUrlCacheRef.current;
-    let url = cache.get(img);
-    if (!url) {
-      url = URL.createObjectURL(img);
-      cache.set(img, url);
-    }
-    return url;
-  }, []);
-
-  // Libera todos los blob URLs cuando el componente se desmonta
-  useEffect(() => {
-    const cache = objectUrlCacheRef.current;
-    return () => {
-      cache.forEach((url) => URL.revokeObjectURL(url));
-      cache.clear();
-    };
-  }, []);
 
   function getVariantKey(attributes: Record<string, string>) {
     return Object.keys(attributes)
@@ -251,6 +144,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     obtenerMarcas().then(setMarcas);
     obtenerBodegas().then(setBodegas);
   }, []);
+  //
 
   useEffect(() => {
     obtenerAtributos().then(setAtributos).catch(err => console.error(err));
@@ -269,84 +163,12 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     setSelectedAttributeIds(attrIds);
   }, [hasVariations, initialData, selectedAttributeIds.length]);
 
+
   // Categorías dinámicas desde Firestore
   const [categoriasDb, setCategoriasDb] = useState<any[]>([]);
   useEffect(() => {
     obtenerCategorias().then(setCategoriasDb);
   }, []);
-
-  // ── Autoguardado de borrador (solo campos de texto, solo en creación) ──
-  // Si el navegador recarga la página por lo que sea, el usuario puede
-  // recuperar lo que llevaba escrito en vez de empezar de cero.
-  useEffect(() => {
-    if (isEdit) return; // en edición no molestamos con borradores
-    try {
-      const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      if (raw) setDraftDisponible(true);
-    } catch {
-      // sessionStorage puede fallar en modo privado de Safari; lo ignoramos
-    }
-  }, [isEdit]);
-
-  useEffect(() => {
-    if (isEdit) return;
-    const draft: DraftFields = {
-      nombre, sku, stock, precio, descuento, categoria, subcategoria, subsubcategoria,
-      descripcion, caracteristicas, tieneMarca, marca, bodegaId, personalizado, camposPersonalizacion,
-    };
-    const timeoutId = window.setTimeout(() => {
-      try {
-        window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-      } catch {
-        // Ignorar errores de almacenamiento (cuota, modo privado, etc.)
-      }
-    }, 500); // pequeño debounce para no escribir en cada tecla
-    return () => window.clearTimeout(timeoutId);
-  }, [isEdit, nombre, sku, stock, precio, descuento, categoria, subcategoria, subsubcategoria, descripcion, caracteristicas, tieneMarca, marca, bodegaId, personalizado, camposPersonalizacion]);
-
-  function restaurarDraft() {
-    try {
-      const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const draft: DraftFields = JSON.parse(raw);
-      setNombre(draft.nombre || "");
-      setSku(draft.sku || "");
-      setStock(draft.stock || 0);
-      setPrecio(draft.precio || "");
-      setDescuento(draft.descuento || "");
-      setCategoria(draft.categoria || "");
-      setSubcategoria(draft.subcategoria || "");
-      setSubsubcategoria(draft.subsubcategoria || "");
-      setDescripcion(draft.descripcion || "");
-      setCaracteristicas(draft.caracteristicas?.length ? draft.caracteristicas : [""]);
-      setTieneMarca(Boolean(draft.tieneMarca));
-      setMarca(draft.marca || "");
-      setBodegaId(draft.bodegaId || "");
-      setPersonalizado(Boolean(draft.personalizado));
-      setCamposPersonalizacion(draft.camposPersonalizacion || []);
-    } catch (err) {
-      console.error("No se pudo restaurar el borrador", err);
-    } finally {
-      setDraftDisponible(false);
-    }
-  }
-
-  function descartarDraft() {
-    try {
-      window.sessionStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // ignorar
-    }
-    setDraftDisponible(false);
-  }
-
-  function limpiarDraftGuardado() {
-    try {
-      window.sessionStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // ignorar
-    }
-  }
 
   // Selectores dependientes dinámicos
   const categorias = categoriasDb.map((cat: any) => ({
@@ -355,26 +177,15 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     subcategorias: cat.subcategorias || []
   }));
   const subcategoriasOptions = categorias.find((c: any) => c.value === categoria)?.subcategorias || [];
-  const subcategoriaRequired = subcategoriasOptions.length > 0;
+  const subcategoriaRequired = false;
   const subsubcategoriasOptions = subcategoriasOptions.find((s: any) => s.id === subcategoria)?.subcategorias || [];
-  const subsubcategoriaRequired = subsubcategoriasOptions.length > 0;
+  const subsubcategoriaRequired = false;
 
-  // ── Manejo de imágenes (por URL o archivo) ──
-  async function handleAddImagen(e: React.ChangeEvent<HTMLInputElement>) {
+  // Manejo de imágenes (por URL o archivo)
+  function handleAddImagen(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
-    // Reseteamos el input ya mismo para poder volver a elegir el mismo archivo después
-    e.target.value = "";
-    if (files.length === 0) return;
-
-    setProcesandoImagenes(true);
-    try {
-      // Comprimimos en el navegador antes de guardar en memoria: crítico
-      // para fotos de cámara de iPhone (varios MB, resolución muy alta).
-      const comprimidas = await Promise.all(files.map((f) => compressImageFile(f)));
-      setImagenes((prev) => [...prev, ...comprimidas]);
-    } finally {
-      setProcesandoImagenes(false);
-    }
+    setImagenes([...imagenes, ...files]); // Guardar File directamente
+    setImagenesInput([]); // limpiar input
   }
   function handleAddImagenUrl() {
     setImagenes([...imagenes, ""]);
@@ -383,33 +194,35 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     setImagenes(imagenes.map((img, i) => i === idx ? val : img));
   }
   function handleRemoveImagen(idx: number) {
-    setImagenes((prev) => {
-      const target = prev[idx];
-      // Liberamos el blob URL asociado, si lo había, para no acumular memoria
-      if (target instanceof File) {
-        const cache = objectUrlCacheRef.current;
-        const url = cache.get(target);
-        if (url) {
-          URL.revokeObjectURL(url);
-          cache.delete(target);
-        }
-      }
-      return prev.filter((_, i) => i !== idx);
-    });
+    setImagenes(imagenes.filter((_, i) => i !== idx));
   }
 
-  // ── Reordenar imágenes: botones subir/bajar ──
-  // El drag & drop de HTML5 no funciona con el dedo en iPhone/Android, así
-  // que este es el método principal de reordenar (funciona en cualquier
-  // dispositivo). Se mantiene simple a propósito.
-  function moverImagen(idx: number, direccion: -1 | 1) {
-    setImagenes((prev) => {
-      const target = idx + direccion;
-      if (target < 0 || target >= prev.length) return prev;
-      const copia = [...prev];
-      [copia[idx], copia[target]] = [copia[target], copia[idx]];
-      return copia;
-    });
+  // ── Manejo de drag & drop para reordenar imágenes ──
+  function handleImagenDragStart(idx: number) {
+    setDraggedImageIdx(idx);
+    setHoveredImageIdx(null);
+  }
+
+  function handleImagenDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleImagenDragLeave() {
+    setHoveredImageIdx(null);
+  }
+
+  function handleImagenDrop(dropIdx: number) {
+    if (draggedImageIdx === null || draggedImageIdx === dropIdx) {
+      setDraggedImageIdx(null);
+      setHoveredImageIdx(null);
+      return;
+    }
+    const newImagenes = [...imagenes];
+    // Intercambiar solo estas 2 imágenes
+    [newImagenes[draggedImageIdx], newImagenes[dropIdx]] = [newImagenes[dropIdx], newImagenes[draggedImageIdx]];
+    setImagenes(newImagenes);
+    setDraggedImageIdx(null);
+    setHoveredImageIdx(null);
   }
 
   // Manejo de características
@@ -552,26 +365,6 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     setStockVariants((current) => current.filter((_, variantIndex) => variantIndex !== index));
   }
 
-  // Manejo de campos de personalización
-  function handleAddCampoPersonalizacion() {
-    const nuevoCampo = {
-      id: `campo-${Date.now()}`,
-      nombre: "",
-      tipo: "texto"
-    };
-    setCamposPersonalizacion([...camposPersonalizacion, nuevoCampo]);
-  }
-
-  function handleRemoveCampoPersonalizacion(id: string) {
-    setCamposPersonalizacion(camposPersonalizacion.filter(c => c.id !== id));
-  }
-
-  function handleCampoPersonalizacionChange(id: string, field: "nombre" | "tipo", value: string) {
-    setCamposPersonalizacion(camposPersonalizacion.map(c =>
-      c.id === id ? { ...c, [field]: value } : c
-    ));
-  }
-
   // Selectores dependientes
   const subcategorias = categorias.find((c: any) => c.value === categoria)?.subcategorias || [];
   const subsubcategorias = subcategorias.find((s: any) => s.value === subcategoria)?.subsubcategorias || [];
@@ -583,158 +376,6 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     }
     return `${base} bg-slate-100 text-slate-600 hover:bg-slate-200`;
   };
-
-  // ── Galería de imágenes reutilizable (evita tener el mismo bloque de
-  // JSX duplicado dos veces, que era una de las causas de renders pesados) ──
-  const renderImageGallery = () => (
-    <>
-      {imagenes.length > 0 && (
-        <div>
-          <h4 className="mb-4 text-sm font-semibold text-slate-700">Imágenes añadidas ({imagenes.length})</h4>
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {imagenes.map((img, idx) => {
-              const isFile = img instanceof File;
-              const url = getPreviewUrl(img);
-
-              return (
-                <div
-                  key={isFile ? `${img.name}-${img.size}-${img.lastModified}` : `url-${idx}`}
-                  className="group relative rounded-2xl border-2 border-slate-200 transition-all hover:border-rose-300 hover:shadow-md"
-                >
-                  {/* Preview de imagen */}
-                  {url && (url.startsWith("http") || url.startsWith("blob:")) ? (
-                    <img
-                      src={url}
-                      alt={`foto-${idx}`}
-                      loading="lazy"
-                      className="w-full aspect-square object-cover rounded-xl"
-                    />
-                  ) : (
-                    <div className="w-full aspect-square rounded-xl bg-slate-100 flex items-center justify-center">
-                      <span className="material-icons-round text-3xl text-slate-300">image_not_supported</span>
-                    </div>
-                  )}
-
-                  {/* Controles: subir / bajar / eliminar. Siempre visibles en
-                      móvil (no dependen de :hover, que no existe con el dedo) */}
-                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 rounded-b-xl bg-black/55 px-1.5 py-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => moverImagen(idx, -1)}
-                      disabled={idx === 0}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 disabled:opacity-30"
-                      aria-label="Mover a la izquierda"
-                    >
-                      <span className="material-icons-round text-base">chevron_left</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImagen(idx)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white"
-                      aria-label="Eliminar imagen"
-                    >
-                      <span className="material-icons-round text-base">delete</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moverImagen(idx, 1)}
-                      disabled={idx === imagenes.length - 1}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 disabled:opacity-30"
-                      aria-label="Mover a la derecha"
-                    >
-                      <span className="material-icons-round text-base">chevron_right</span>
-                    </button>
-                  </div>
-
-                  {/* Número de orden en la esquina */}
-                  <div className="absolute top-2 left-2 bg-rose-500 text-white rounded-lg px-2.5 py-1 text-xs font-bold">
-                    {idx + 1}
-                  </div>
-
-                  {/* Etiqueta de tipo */}
-                  <div className="absolute top-2 right-2 bg-white/90 text-slate-700 rounded-lg px-2 py-1 text-[10px] font-semibold truncate max-w-[calc(100%-2.5rem)]">
-                    {isFile ? "Archivo" : "URL"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-4 text-xs text-slate-500">
-            Usa las flechas de cada foto para cambiar el orden.
-          </p>
-        </div>
-      )}
-
-      {/* Controles de entrada de fotos */}
-      <div className="mt-6 space-y-4 rounded-2xl bg-slate-50 p-5">
-        <label className="block">
-          <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <span className="material-icons-round text-base">image</span>
-            Subir desde dispositivo
-          </span>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleAddImagen}
-            disabled={procesandoImagenes}
-            className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-base file:mr-4 file:rounded-full file:border-0 file:bg-rose-500 file:px-4 file:py-2 file:text-white file:font-semibold disabled:opacity-60"
-          />
-          {procesandoImagenes && (
-            <span className="mt-2 flex items-center gap-2 text-xs font-semibold text-rose-500">
-              <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
-              Optimizando imágenes para que el formulario no se ponga lento...
-            </span>
-          )}
-        </label>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-rose-500 hover:text-rose-700 transition"
-          onClick={handleAddImagenUrl}
-        >
-          <span className="material-icons-round text-base">add_link</span>
-          Agregar por URL
-        </button>
-      </div>
-
-      {/* Inputs para URLs que no han sido completadas */}
-      {imagenes.some(img => typeof img === "string") && (
-        <div className="mt-6 space-y-4 rounded-2xl bg-blue-50 border border-blue-200 p-5">
-          <h4 className="text-sm font-semibold text-blue-900">URLs pendientes de completar</h4>
-          <div className="space-y-3">
-            {imagenes.map((img, idx) => {
-              if (typeof img === "string") {
-                return (
-                  <div key={idx} className="flex gap-2 items-end">
-                    <label className="flex-1">
-                      <span className="mb-1 block text-xs font-semibold text-blue-700">Imagen #{idx + 1}</span>
-                      <input
-                        className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        value={img}
-                        onChange={e => handleImagenUrlChange(idx, e.target.value)}
-                        placeholder="Pega aquí la URL de la imagen"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImagen(idx)}
-                      className="px-3 py-3 text-sm font-semibold text-red-600 hover:text-red-700 transition"
-                    >
-                      <span className="material-icons-round">close</span>
-                    </button>
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
-        </div>
-      )}
-    </>
-  );
 
   const renderGeneralSection = () => (
     <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
@@ -762,8 +403,198 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <span className="mt-2 block text-sm text-slate-400">10000 caracteres restantes</span>
         </label>
 
-        {/* ── SECCIÓN DE FOTOS DENTRO DE GENERAL (solo en modo creación) ── */}
-        {!isEdit && renderImageGallery()}
+        {/* ── SECCIÓN DE FOTOS DENTRO DE GENERAL ──────────────────── */}
+        {imagenes.length > 0 && (
+          <div>
+            <h4 className="mb-4 text-sm font-semibold text-slate-700">Imágenes añadidas ({imagenes.length})</h4>
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {imagenes.map((img, realIdx) => {
+                // Si estamos en drag, mostrar en la posición intercambiada visualmente
+                let displayIdx = realIdx;
+                if (draggedImageIdx !== null && hoveredImageIdx !== null && draggedImageIdx !== hoveredImageIdx) {
+                  if (realIdx === draggedImageIdx) {
+                    displayIdx = hoveredImageIdx;
+                  } else if (realIdx === hoveredImageIdx) {
+                    displayIdx = draggedImageIdx;
+                  }
+                }
+
+                const isFile = img instanceof File;
+                const isUrl = typeof img === "string";
+                const url = isFile ? URL.createObjectURL(img) : (isUrl && img.trim() ? img : "");
+
+                return (
+                  <div
+                    key={realIdx}
+                    draggable
+                    onDragStart={() => handleImagenDragStart(realIdx)}
+                    onDragOver={(e) => {
+                      handleImagenDragOver(e);
+                      setHoveredImageIdx(realIdx);
+                    }}
+                    onDragLeave={handleImagenDragLeave}
+                    onDrop={() => handleImagenDrop(realIdx)}
+                    className={`group relative rounded-2xl border-2 transition-all cursor-move ${
+                      draggedImageIdx === realIdx 
+                        ? "border-rose-400 bg-rose-50 opacity-70" 
+                        : hoveredImageIdx === realIdx && draggedImageIdx !== null
+                        ? "border-blue-400 bg-blue-50 ring-2 ring-blue-300"
+                        : "border-slate-200 hover:border-rose-300 hover:shadow-md"
+                    }`}
+                  >
+                    {/* Preview de imagen */}
+                    {url && (url.startsWith("http") || url.startsWith("blob:")) ? (
+                      <img 
+                        src={url} 
+                        alt={`foto-${realIdx}`} 
+                        className="w-full aspect-square object-cover rounded-xl"
+                      />
+                    ) : (
+                      <div className="w-full aspect-square rounded-xl bg-slate-100 flex items-center justify-center">
+                        <span className="material-icons-round text-3xl text-slate-300">image_not_supported</span>
+                      </div>
+                    )}
+
+                    {/* Overlay con preview de imagen arrastrada cuando está sobre esta posición */}
+                    {hoveredImageIdx === realIdx && draggedImageIdx !== null && draggedImageIdx !== realIdx && (
+                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-black/20 flex items-center justify-center z-20">
+                        {(() => {
+                          const draggedImg = imagenes[draggedImageIdx];
+                          const draggedIsFile = draggedImg instanceof File;
+                          const draggedIsUrl = typeof draggedImg === "string";
+                          const draggedUrl = draggedIsFile ? URL.createObjectURL(draggedImg) : (draggedIsUrl && draggedImg.trim() ? draggedImg : "");
+                          
+                          return draggedUrl && (draggedUrl.startsWith("http") || draggedUrl.startsWith("blob:")) ? (
+                            <img 
+                              src={draggedUrl} 
+                              alt="preview-arrastrada" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <span className="material-icons-round text-4xl text-white/80">image</span>
+                              <p className="text-white text-xs font-semibold mt-1">Imagen {draggedImageIdx + 1}</p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Overlay con preview de imagen destino cuando se está arrastrando otra sobre ella */}
+                    {draggedImageIdx === realIdx && hoveredImageIdx !== null && hoveredImageIdx !== realIdx && (
+                      <div className="absolute inset-0 rounded-xl overflow-hidden bg-black/20 flex items-center justify-center z-20">
+                        {(() => {
+                          const hoveredImg = imagenes[hoveredImageIdx];
+                          const hoveredIsFile = hoveredImg instanceof File;
+                          const hoveredIsUrl = typeof hoveredImg === "string";
+                          const hoveredUrl = hoveredIsFile ? URL.createObjectURL(hoveredImg) : (hoveredIsUrl && hoveredImg.trim() ? hoveredImg : "");
+                          
+                          return hoveredUrl && (hoveredUrl.startsWith("http") || hoveredUrl.startsWith("blob:")) ? (
+                            <img 
+                              src={hoveredUrl} 
+                              alt="preview-destino" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center">
+                              <span className="material-icons-round text-4xl text-white/80">image</span>
+                              <p className="text-white text-xs font-semibold mt-1">Imagen {hoveredImageIdx + 1}</p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Overlay con controles */}
+                    <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/40 transition-all flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImagen(realIdx)}
+                        className="flex items-center justify-center gap-1 rounded-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-sm font-semibold transition"
+                      >
+                        <span className="material-icons-round text-base">delete</span>
+                        Eliminar
+                      </button>
+                    </div>
+
+                    {/* Número de orden en la esquina */}
+                    <div className="absolute top-2 left-2 bg-rose-500 text-white rounded-lg px-2.5 py-1 text-xs font-bold transition-all">
+                      {displayIdx + 1}
+                    </div>
+
+                    {/* Etiqueta de tipo */}
+                    <div className="absolute bottom-2 left-2 bg-white/90 text-slate-700 rounded-lg px-2 py-1 text-[10px] font-semibold truncate max-w-[calc(100%-1rem)]">
+                      {isFile ? "Archivo" : "URL"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-xs text-slate-500 flex items-center gap-1">
+              <span className="material-icons-round text-sm">drag_indicator</span>
+              Arrastra las imágenes para reordenarlas
+            </p>
+          </div>
+        )}
+
+        {/* Controles de entrada de fotos */}
+        <div className="space-y-4 rounded-2xl bg-slate-50 p-5">
+          <label className="block">
+            <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <span className="material-icons-round text-base">image</span>
+              Subir desde dispositivo
+            </span>
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*" 
+              onChange={handleAddImagen} 
+              className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-rose-500 file:px-4 file:py-2 file:text-white file:font-semibold" 
+            />
+          </label>
+          <button 
+            type="button" 
+            className="inline-flex items-center gap-2 text-sm font-semibold text-rose-500 hover:text-rose-700 transition"
+            onClick={handleAddImagenUrl}
+          >
+            <span className="material-icons-round text-base">add_link</span>
+            Agregar por URL
+          </button>
+        </div>
+
+        {/* Inputs para URLs que no han sido completadas */}
+        {imagenes.some(img => typeof img === "string") && (
+          <div className="mt-6 space-y-4 rounded-2xl bg-blue-50 border border-blue-200 p-5">
+            <h4 className="text-sm font-semibold text-blue-900">URLs pendientes de completar</h4>
+            <div className="space-y-3">
+              {imagenes.map((img, idx) => {
+                if (typeof img === "string") {
+                  return (
+                    <div key={idx} className="flex gap-2 items-end">
+                      <label className="flex-1">
+                        <span className="mb-1 block text-xs font-semibold text-blue-700">Imagen #{idx + 1}</span>
+                        <input 
+                          className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" 
+                          value={img} 
+                          onChange={e => handleImagenUrlChange(idx, e.target.value)} 
+                          placeholder="Pega aquí la URL de la imagen" 
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImagen(idx)}
+                        className="px-3 py-3 text-sm font-semibold text-red-600 hover:text-red-700 transition"
+                      >
+                        <span className="material-icons-round">close</span>
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block">
@@ -874,72 +705,6 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         </div>
 
         <div className="rounded-[26px] bg-slate-50 p-5">
-          <label className="block mb-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={personalizado}
-                onChange={e => setPersonalizado(e.target.checked)}
-                className="w-5 h-5 rounded cursor-pointer accent-rose-500"
-              />
-              <span className="text-sm font-semibold text-slate-700">¿Producto personalizado?</span>
-            </div>
-            <p className="mt-1 text-xs text-slate-500 ml-8">Permite al cliente agregar personalización al producto (ej: forma, diseño, texto)</p>
-          </label>
-
-          {personalizado && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-amber-900">Campos de personalización</span>
-                <button
-                  type="button"
-                  onClick={handleAddCampoPersonalizacion}
-                  className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition"
-                >
-                  <span className="material-icons-round text-sm">add</span>
-                  Agregar campo
-                </button>
-              </div>
-              {camposPersonalizacion.length === 0 ? (
-                <p className="text-xs text-amber-700">No hay campos de personalización agregados</p>
-              ) : (
-                <div className="space-y-2">
-                  {camposPersonalizacion.map((campo) => (
-                    <div key={campo.id} className="flex gap-2 items-start rounded-lg border border-amber-200 bg-white p-2">
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="text"
-                          value={campo.nombre}
-                          onChange={(e) => handleCampoPersonalizacionChange(campo.id, "nombre", e.target.value)}
-                          placeholder="Nombre del campo (ej: Forma, Diseño)"
-                          className="w-full rounded-lg border border-amber-200 px-3 py-2 text-base outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
-                        />
-                        <select
-                          value={campo.tipo}
-                          onChange={(e) => handleCampoPersonalizacionChange(campo.id, "tipo", e.target.value)}
-                          className="w-full rounded-lg border border-amber-200 px-3 py-2 text-base outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-200"
-                        >
-                          <option value="texto">Texto</option>
-                          <option value="numero">Número</option>
-                          <option value="fecha">Fecha</option>
-                        </select>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCampoPersonalizacion(campo.id)}
-                        className="mt-1 rounded-lg p-2 text-red-500 hover:bg-red-50 transition"
-                      >
-                        <span className="material-icons-round text-lg">delete</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-[26px] bg-slate-50 p-5">
           <label className="block">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Características</span>
           </label>
@@ -976,7 +741,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         <div className="space-y-4">
           <label className="block">
             <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Stock</span>
-            <input className="w-full max-w-xs rounded-2xl border border-slate-200 bg-white px-4 py-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" inputMode="numeric" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required />
+            <input className="w-full max-w-xs rounded-2xl border border-slate-200 bg-white px-4 py-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required />
           </label>
           <p className="text-sm text-slate-500">Los productos nuevos arrancan con stock normal. Si luego necesita variaciones, se configura en edición.</p>
         </div>
@@ -1007,7 +772,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           {!hasVariations ? (
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Stock</span>
-              <input className="w-full max-w-xs rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" inputMode="numeric" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required />
+              <input className="w-full max-w-xs rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" min="0" value={stock} onChange={e => setStock(Number(e.target.value))} required />
             </label>
           ) : (
             <div className="space-y-4">
@@ -1068,7 +833,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
               {stockVariants.length > 0 && (
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="border-b border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">Variaciones generadas</div>
-                  <div className="grid items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 md:grid-cols-[minmax(0,1.8fr)_90px_90px_52px]">
+                  <div className="grid items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-black md:grid-cols-[minmax(0,1.8fr)_90px_90px_52px]">
                     <div>Variación</div>
                     <div>Stock</div>
                     <div>Precio</div>
@@ -1088,9 +853,8 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
                         <label className="block">
                           <input
                             type="number"
-                            inputMode="numeric"
                             min="0"
-                            className="h-8 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 text-base"
+                            className="h-8 w-full rounded-xl border border-slate-300 bg-white px-2 text-sm text-black caret-black placeholder:text-black/60 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                             value={variant.cantidad}
                             onChange={(e) => updateVariantCantidad(idx, Number(e.target.value))}
                           />
@@ -1099,10 +863,9 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
                         <label className="block">
                           <input
                             type="number"
-                            inputMode="decimal"
                             min="0"
                             step="0.01"
-                            className="h-8 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 text-base"
+                            className="h-8 w-full rounded-xl border border-slate-300 bg-white px-2 text-sm text-black caret-black placeholder:text-black/60 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                             value={variant.precio ?? ""}
                             onChange={(e) => updateVariantPrecio(idx, e.target.value)}
                             placeholder="Opcional"
@@ -1132,9 +895,202 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
       <div className="mb-8">
         <h3 className="text-2xl font-semibold text-slate-900">Fotos</h3>
-        <p className="mt-2 text-sm text-slate-500">Sube imágenes o añade URLs. Usa las flechas de cada foto para reordenar.</p>
+        <p className="mt-2 text-sm text-slate-500">Sube imágenes o añade URLs. Arrastra para reordenar.</p>
       </div>
-      {renderImageGallery()}
+
+      {/* Controles de entrada */}
+      <div className="mb-8 space-y-4 rounded-2xl bg-slate-50 p-5">
+        <label className="block">
+          <span className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <span className="material-icons-round text-base">image</span>
+            Subir desde dispositivo
+          </span>
+          <input 
+            type="file" 
+            multiple 
+            accept="image/*" 
+            onChange={handleAddImagen} 
+            className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-rose-500 file:px-4 file:py-2 file:text-white file:font-semibold" 
+          />
+        </label>
+        <button 
+          type="button" 
+          className="inline-flex items-center gap-2 text-sm font-semibold text-rose-500 hover:text-rose-700 transition"
+          onClick={handleAddImagenUrl}
+        >
+          <span className="material-icons-round text-base">add_link</span>
+          Agregar por URL
+        </button>
+      </div>
+
+      {/* Galería de imágenes */}
+      {imagenes.length > 0 && (
+        <div>
+          <h4 className="mb-4 text-sm font-semibold text-slate-700">Imágenes añadidas ({imagenes.length})</h4>
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {imagenes.map((img, realIdx) => {
+              // Si estamos en drag, mostrar en la posición intercambiada visualmente
+              let displayIdx = realIdx;
+              if (draggedImageIdx !== null && hoveredImageIdx !== null && draggedImageIdx !== hoveredImageIdx) {
+                if (realIdx === draggedImageIdx) {
+                  displayIdx = hoveredImageIdx;
+                } else if (realIdx === hoveredImageIdx) {
+                  displayIdx = draggedImageIdx;
+                }
+              }
+
+              const isFile = img instanceof File;
+              const isUrl = typeof img === "string";
+              const url = isFile ? URL.createObjectURL(img) : (isUrl && img.trim() ? img : "");
+              const fileName = isFile ? img.name : (isUrl ? "URL" : "");
+
+              return (
+                <div
+                  key={realIdx}
+                  draggable
+                  onDragStart={() => handleImagenDragStart(realIdx)}
+                  onDragOver={(e) => {
+                    handleImagenDragOver(e);
+                    setHoveredImageIdx(realIdx);
+                  }}
+                  onDragLeave={handleImagenDragLeave}
+                  onDrop={() => handleImagenDrop(realIdx)}
+                  className={`group relative rounded-2xl border-2 transition-all cursor-move ${
+                    draggedImageIdx === realIdx 
+                      ? "border-rose-400 bg-rose-50 opacity-70" 
+                      : hoveredImageIdx === realIdx && draggedImageIdx !== null
+                      ? "border-blue-400 bg-blue-50 ring-2 ring-blue-300"
+                      : "border-slate-200 hover:border-rose-300 hover:shadow-md"
+                  }`}
+                >
+                  {/* Preview de imagen */}
+                  {url && (url.startsWith("http") || url.startsWith("blob:")) ? (
+                    <img 
+                      src={url} 
+                      alt={`foto-${realIdx}`} 
+                      className="w-full aspect-square object-cover rounded-xl"
+                    />
+                  ) : (
+                    <div className="w-full aspect-square rounded-xl bg-slate-100 flex items-center justify-center">
+                      <span className="material-icons-round text-3xl text-slate-300">image_not_supported</span>
+                    </div>
+                  )}
+
+                  {/* Overlay con preview de imagen arrastrada cuando está sobre esta posición */}
+                  {hoveredImageIdx === realIdx && draggedImageIdx !== null && draggedImageIdx !== realIdx && (
+                    <div className="absolute inset-0 rounded-xl overflow-hidden bg-black/20 flex items-center justify-center z-20">
+                      {(() => {
+                        const draggedImg = imagenes[draggedImageIdx];
+                        const draggedIsFile = draggedImg instanceof File;
+                        const draggedIsUrl = typeof draggedImg === "string";
+                        const draggedUrl = draggedIsFile ? URL.createObjectURL(draggedImg) : (draggedIsUrl && draggedImg.trim() ? draggedImg : "");
+                        
+                        return draggedUrl && (draggedUrl.startsWith("http") || draggedUrl.startsWith("blob:")) ? (
+                          <img 
+                            src={draggedUrl} 
+                            alt="preview-arrastrada" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <span className="material-icons-round text-4xl text-white/80">image</span>
+                            <p className="text-white text-xs font-semibold mt-1">Imagen {draggedImageIdx + 1}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Overlay con preview de imagen destino cuando se está arrastrando otra sobre ella */}
+                  {draggedImageIdx === realIdx && hoveredImageIdx !== null && hoveredImageIdx !== realIdx && (
+                    <div className="absolute inset-0 rounded-xl overflow-hidden bg-black/20 flex items-center justify-center z-20">
+                      {(() => {
+                        const hoveredImg = imagenes[hoveredImageIdx];
+                        const hoveredIsFile = hoveredImg instanceof File;
+                        const hoveredIsUrl = typeof hoveredImg === "string";
+                        const hoveredUrl = hoveredIsFile ? URL.createObjectURL(hoveredImg) : (hoveredIsUrl && hoveredImg.trim() ? hoveredImg : "");
+                        
+                        return hoveredUrl && (hoveredUrl.startsWith("http") || hoveredUrl.startsWith("blob:")) ? (
+                          <img 
+                            src={hoveredUrl} 
+                            alt="preview-destino" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center">
+                            <span className="material-icons-round text-4xl text-white/80">image</span>
+                            <p className="text-white text-xs font-semibold mt-1">Imagen {hoveredImageIdx + 1}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Overlay con controles */}
+                  <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/40 transition-all flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImagen(realIdx)}
+                      className="flex items-center justify-center gap-1 rounded-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-sm font-semibold transition"
+                    >
+                      <span className="material-icons-round text-base">delete</span>
+                      Eliminar
+                    </button>
+                  </div>
+
+                  {/* Número de orden en la esquina */}
+                  <div className="absolute top-2 left-2 bg-rose-500 text-white rounded-lg px-2.5 py-1 text-xs font-bold transition-all">
+                    {displayIdx + 1}
+                  </div>
+
+                  {/* Etiqueta de tipo */}
+                  <div className="absolute bottom-2 left-2 bg-white/90 text-slate-700 rounded-lg px-2 py-1 text-[10px] font-semibold truncate max-w-[calc(100%-1rem)]">
+                    {isFile ? "Archivo" : "URL"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs text-slate-500 flex items-center gap-1">
+            <span className="material-icons-round text-sm">drag_indicator</span>
+            Arrastra las imágenes para reordenarlas
+          </p>
+        </div>
+      )}
+
+      {/* Inputs para URLs que no han sido completadas */}
+      {imagenes.some(img => typeof img === "string") && (
+        <div className="mt-6 space-y-4 rounded-2xl bg-blue-50 border border-blue-200 p-5">
+          <h4 className="text-sm font-semibold text-blue-900">URLs pendientes de completar</h4>
+          <div className="space-y-3">
+            {imagenes.map((img, idx) => {
+              if (typeof img === "string") {
+                return (
+                  <div key={idx} className="flex gap-2 items-end">
+                    <label className="flex-1">
+                      <span className="mb-1 block text-xs font-semibold text-blue-700">Imagen #{idx + 1}</span>
+                      <input 
+                        className="w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" 
+                        value={img} 
+                        onChange={e => handleImagenUrlChange(idx, e.target.value)} 
+                        placeholder="Pega aquí la URL de la imagen" 
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImagen(idx)}
+                      className="px-3 py-3 text-sm font-semibold text-red-600 hover:text-red-700 transition"
+                    >
+                      <span className="material-icons-round">close</span>
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 
@@ -1148,11 +1104,11 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
       <div className="grid gap-5 md:max-w-2xl md:grid-cols-2">
         <label className="block md:col-span-2">
           <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Precio base</span>
-          <input className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" inputMode="decimal" min="0" value={precio} onChange={e => setPrecio(e.target.value)} required />
+          <input className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-lg font-semibold text-slate-900 outline-none transition focus:border-rose-400 focus:ring-2 focus:ring-rose-100" type="number" min="0" value={precio} onChange={e => setPrecio(e.target.value)} required />
         </label>
         <label className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Descuento (%)</span>
-          <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg font-semibold text-slate-700 outline-none" type="number" inputMode="numeric" min="0" value={descuento} onChange={e => {
+          <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg font-semibold text-slate-700 outline-none" type="number" min="0" value={descuento} onChange={e => {
             const val = e.target.value;
             if (val === "") {
               setDescuento("");
@@ -1166,7 +1122,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         </label>
         <label className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Uso del descuento</span>
-          <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-semibold text-slate-400 outline-none" type="text" value="Se aplicará al precio base al comprar" readOnly />
+          <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-400 outline-none" type="text" value="Se aplicará al precio base al comprar" readOnly />
         </label>
       </div>
     </section>
@@ -1321,19 +1277,14 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         precio,
         descuento: descuento !== "" ? Number(descuento) : undefined,
         categoria,
-        subcategoria: subcategoriaRequired ? subcategoria : "",
-        subsubcategoria: subsubcategoriaRequired ? subsubcategoria : "",
+        subcategoria,
+        subsubcategoria,
         marca: tieneMarca ? marca : undefined,
         bodegaId,
         imagenes: imagenesFinal,
         descripcion,
-        caracteristicas,
-        personalizado,
-        camposPersonalizacion: personalizado ? camposPersonalizacion.filter(c => c.nombre.trim() !== "") : undefined
+        caracteristicas
       });
-
-      // Se guardó con éxito: ya no hace falta el borrador
-      limpiarDraftGuardado();
 
       // Resetear campos solo si es creación (no edición)
       if (!isEdit) {
@@ -1377,18 +1328,6 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
 
   return (
     <form className={isEdit ? "grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]" : "mx-auto flex max-w-5xl flex-col gap-8"} onSubmit={handleSubmit}>
-      {!isEdit && draftDisponible && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4">
-          <p className="text-sm font-semibold text-amber-800">
-            Encontramos un borrador sin guardar de un intento anterior. ¿Quieres recuperarlo?
-          </p>
-          <div className="flex gap-2">
-            <button type="button" onClick={restaurarDraft} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">Recuperar</button>
-            <button type="button" onClick={descartarDraft} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-amber-700 border border-amber-300 hover:bg-amber-100">Descartar</button>
-          </div>
-        </div>
-      )}
-
       {isEdit ? (
         <aside className="rounded-[28px] border border-slate-200 bg-slate-50 p-4 lg:sticky lg:top-6 lg:h-fit">
           <div className="mb-4 px-2">
@@ -1417,7 +1356,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <>{renderActiveEditSection()}</>
         )}
 
-        <div className="flex flex-wrap items-center justify-end gap-4 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sticky bottom-0 sm:static">
+        <div className="flex flex-wrap items-center justify-end gap-4 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
           <button
             type="button"
             className="rounded-full bg-slate-100 px-6 py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-200"
@@ -1428,7 +1367,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <button
             type="submit"
             className={`inline-flex items-center justify-center gap-2 rounded-full bg-rose-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 ${loading ? 'cursor-not-allowed opacity-60' : ''}`}
-            disabled={loading || procesandoImagenes}
+            disabled={loading}
           >
             {loading && (
               <svg className="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1443,3 +1382,4 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     </form>
   );
 }
+

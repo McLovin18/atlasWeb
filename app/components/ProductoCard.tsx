@@ -310,8 +310,14 @@ function ProductoCard({
         <div className="pc-card" onClick={onClick || goToDetail}>
           {/* ── IMAGEN ── */}
           <div className="pc-img-wrap">
-
-
+            {/* Imagen del producto */}
+            {producto.imagenes && producto.imagenes.length > 0 && (
+              <img
+                src={producto.imagenes[0]}
+                alt={producto.nombre}
+                loading="lazy"
+              />
+            )}
 
             {/* Badge descuento */}
             {hasDiscount && (

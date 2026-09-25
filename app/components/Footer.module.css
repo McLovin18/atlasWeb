@@ -6,25 +6,11 @@
 }
 
 .ftGlowLeft {
-  position: absolute;
-  top: -80px;
-  left: -120px;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.18) 0%, transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 
 .ftGlowRight {
-  position: absolute;
-  bottom: -60px;
-  right: -80px;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.3) 0%, transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 
 .ftMain {

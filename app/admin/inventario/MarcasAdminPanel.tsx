@@ -43,7 +43,7 @@ export default function MarcasAdminPanel() {
       <div className="flex gap-2 mb-4">
         <input
           type="text"
-          className="flex-1 border rounded px-3 py-2"
+          className="flex-1 border rounded px-3 py-2 text-slate-900 dark:text-white bg-white dark:bg-slate-700"
           placeholder="Nueva marca..."
           value={nuevaMarca}
           onChange={e => setNuevaMarca(e.target.value)}

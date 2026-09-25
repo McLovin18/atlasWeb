@@ -300,7 +300,7 @@ export default function HeroSection({
         ? "6 / 5"
         : screenType === "tablet"
         ? "14 / 9"
-        : "2400 / 1000",
+        : "2400 / 700",
     overflow: "hidden",
   };
 

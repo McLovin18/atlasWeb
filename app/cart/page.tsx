@@ -157,7 +157,7 @@ export default function CartPage() {
       }
     }
 
-    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "0988705890";
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "0968517232";
     const message = await generateWhatsAppMessage();
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   };

@@ -19,12 +19,12 @@ const IconWhatsApp = () => (
 );
 
 const socialLinks = [
-  { href: "https://www.instagram.com/importadora_atlas", label: "Instagram", Icon: IconInstagram },
+  { href: "https://www.instagram.com/importadoratlas/", label: "Instagram", Icon: IconInstagram },
 ];
 
 // 👉 Información del negocio
-const WHATSAPP_NUMBER = "593990000000"; // solo números, con código de país, sin '+' ni espacios
-const WHATSAPP_DISPLAY = "+593 99 000 0000"; // como se muestra al usuario
+const WHATSAPP_NUMBER = "593968517232"; // solo números, con código de país, sin '+' ni espacios
+const WHATSAPP_DISPLAY = "+593 96 851 7232"; // como se muestra al usuario
 
 const Footer: React.FC = () => {
   const pathname = usePathname();
@@ -48,15 +48,9 @@ const Footer: React.FC = () => {
                 Importadora Atlas
               </span>
               <span className="text-xs text-[var(--textSecondary)]">
-                Tienda de ropa en Ecuador
+                Tienda de tecnología
               </span>
-              <div className="text-xs text-[var(--textSecondary)] mt-1 max-w-[220px]">
-                <p className="font-semibold text-[var(--text)]">Moda y estilo para:</p>
-                <p>Hombres</p>
-                <p>Mujeres</p>
-                <p>Niños</p>
-                <p>Las mejores marcas y tendencias</p>
-              </div>
+
             </div>
 
             {/* Columna 2: Redes sociales */}
@@ -93,7 +87,7 @@ const Footer: React.FC = () => {
               </a>
 
               <p className="text-xs text-[var(--textSecondary)] text-center md:text-left leading-snug max-w-[260px]">
-                Importadora Atlas - Calidad y estilo en cada prenda. Compra segura y entregas a todo el país.
+                Importadora Atlas - Tecnología que simplifica tu vida. Compra segura y entregas a todo el país.
               </p>
             </div>
 

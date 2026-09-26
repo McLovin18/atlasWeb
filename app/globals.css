@@ -30,6 +30,27 @@
   --color-gold-muted: #4a3d1a;      /* gold muy oscurecido/desaturado — fondo navbar/footer, no compite con el negro */
   --color-gold-muted-hover: #5c4c22; /* variante un poco más clara para hover/active sobre el navbar */
 
+  /* --- Tipografía --- */
+  --font-body-family: "Open Sauce One", sans-serif;
+  --font-body-style: normal;
+  --font-body-weight: 400;
+  --font-body-weight-bold: 700;
+
+  --font-heading-family: "Open Sauce One", sans-serif;
+  --font-heading-style: normal;
+  --font-heading-weight: 700;
+
+  --font-body-scale: 1.0;
+  --font-heading-scale: 1.15;
+
+  /* --- Tipografía exclusiva del navbar --- */
+  --font-navbar-body-family: "Open Sauce One", sans-serif;
+  --font-navbar-heading-family: "Hagrid Text", serif;
+}
+
+/* --- Tema Oscuro (por defecto) --- */
+:root,
+.dark {
   /* --- Semántica --- */
   --background: var(--color-black);
   --foreground: var(--color-bone);
@@ -41,6 +62,8 @@
   --textSecondary: var(--color-stone);
 
   --border: var(--color-charcoal);
+
+  --cardBg: var(--color-charcoal);
 
   /* --- Colores de marca / acción --- */
   --primary: var(--color-gold);
@@ -71,23 +94,53 @@
   --footerBg: var(--color-gold-muted);
   --footerText: var(--color-bone);
   --footerTextMuted: var(--color-stone);
+}
 
-  /* --- Tipografía --- */
-  --font-body-family: "Open Sauce One", sans-serif;
-  --font-body-style: normal;
-  --font-body-weight: 400;
-  --font-body-weight-bold: 700;
+/* --- Tema Claro --- */
+.light {
+  /* --- Semántica --- */
+  --background: #f8fafc !important;
+  --foreground: #0f172a !important;
 
-  --font-heading-family: "Open Sauce One", sans-serif;
-  --font-heading-style: normal;
-  --font-heading-weight: 700;
+  --bg: #f8fafc !important;
+  --bgSecondary: #ffffff !important;
 
-  --font-body-scale: 1.0;
-  --font-heading-scale: 1.15;
+  --text: #0f172a !important;
+  --textSecondary: #64748b !important;
 
-  /* --- Tipografía exclusiva del navbar --- */
-  --font-navbar-body-family: "Open Sauce One", sans-serif;
-  --font-navbar-heading-family: "Hagrid Text", serif;
+  --border: #e2e8f0 !important;
+
+  --cardBg: #ffffff !important;
+
+  /* --- Colores de marca / acción --- */
+  --primary: #3b82f6 !important;
+  --primaryHover: #2563eb !important;
+  --primaryForeground: #ffffff !important;
+
+  --secondary: var(--color-fern) !important;
+  --secondaryHover: var(--color-fern-dark) !important;
+  --secondaryForeground: var(--color-bone) !important;
+
+  --accent: var(--color-terracota) !important;
+  --accentForeground: var(--color-bone) !important;
+
+  --muted: #f1f5f9 !important;
+  --mutedForeground: #64748b !important;
+
+  --card: #ffffff !important;
+  --cardForeground: #0f172a !important;
+
+  --galleryImgBg: #f1f5f9 !important;
+
+  /* --- Navbar / Footer --- */
+  --navbarBg: rgba(255, 255, 255, 0.8) !important;
+  --navbarBgHover: rgba(255, 255, 255, 0.95) !important;
+  --navbarText: #0f172a !important;
+  --navbarTextMuted: var(--color-gold) !important;
+
+  --footerBg: #ffffff !important;
+  --footerText: #0f172a !important;
+  --footerTextMuted: #64748b !important;
 }
 
 @theme inline {

@@ -7,6 +7,7 @@ import type {
   LandingFieldStyle,
 } from "../../lib/landing-types";
 import ProductoCard from "../../components/ProductoCard";
+import { themeManager } from "../../components/themeManager";
 
 export type FeaturedProductsSectionProps = {
   title?: string;
@@ -43,6 +44,27 @@ export default function FeaturedProductsSection({
   styles,
   fieldStyles,
 }: FeaturedProductsSectionProps) {
+  const [theme, setTheme] = React.useState("dark");
+  const titleRef = React.useRef<HTMLHeadingElement>(null);
+
+  React.useEffect(() => {
+    const checkTheme = () => {
+      const currentTheme = themeManager.getTheme();
+      setTheme(currentTheme);
+    };
+    checkTheme();
+    const handler = () => checkTheme();
+    window.addEventListener('theme-changed', handler);
+    return () => window.removeEventListener('theme-changed', handler);
+  }, []);
+
+  React.useEffect(() => {
+    if (titleRef.current) {
+      const titleEl = titleRef.current;
+      titleEl.style.color = theme === "light" ? "#0f172a" : "var(--text)";
+    }
+  }, [theme]);
+
   const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
   const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "0.5rem");
 
@@ -59,12 +81,17 @@ export default function FeaturedProductsSection({
 
   return (
     <section
-      style={{ paddingTop, paddingBottom }}
+      style={{
+        paddingTop,
+        paddingBottom,
+        background: "var(--bg)"
+      }}
       className="w-full max-w-full px-2 md:px-2 flex flex-col items-center m-0 overflow-x-hidden"
     >
       {/* Título */}
       {title && (
         <h2
+          ref={titleRef}
           className="section-title text-center py-2"
           style={fieldStyles?.title || { color: "var(--text)" }}
         >

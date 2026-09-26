@@ -79,3 +79,22 @@ export type SectionSchema = {
   icon?: string;
   fields: SectionFieldSchema[];
 };
+
+// VIP Products Section
+export type VIPProductItem = {
+  id?: string;
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  buttonLink?: string;
+  image?: string | null;
+  fieldStyles?: Record<string, LandingFieldStyle>;
+};
+
+export type VIPProductsSectionProps = {
+  items?: VIPProductItem[];
+  styles?: LandingSectionStyles;
+  fieldStyles?: Record<string, LandingFieldStyle>;
+  device?: "mobile" | "desktop";
+};

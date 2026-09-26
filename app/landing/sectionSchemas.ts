@@ -159,4 +159,24 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
       { name: "interval", type: "number", label: "Intervalo auto-play (ms)", group: "content" },
     ],
   },
+  vipProducts: {
+    type: "vipProducts",
+    label: "Productos VIP",
+    icon: "workspace_premium",
+    fields: [
+      // Los items se gestionan dinámicamente en el panel
+      { name: "backgroundColor", type: "color", label: "Color de fondo", group: "styles" },
+      { name: "textColor", type: "color", label: "Color de texto", group: "styles" },
+      { name: "paddingTop", type: "text", label: "Padding superior", group: "styles" },
+      { name: "paddingBottom", type: "text", label: "Padding inferior", group: "styles" },
+      { name: "borderRadius", type: "text", label: "Border radius contenedor", group: "styles" },
+      
+      // Estilos del botón
+      { name: "buttonBackgroundColor", type: "color", label: "Color de fondo del botón", group: "styles" },
+      { name: "buttonTextColor", type: "color", label: "Color de texto del botón", group: "styles" },
+      { name: "buttonBorderColor", type: "color", label: "Color de borde del botón", group: "styles" },
+      { name: "buttonBorderWidth", type: "text", label: "Grosor de borde del botón (ej: 2px)", group: "styles" },
+      { name: "buttonBorderRadius", type: "text", label: "Border radius del botón (ej: 1rem)", group: "styles" },
+    ],
+  },
 };

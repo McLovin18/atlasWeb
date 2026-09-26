@@ -102,7 +102,7 @@ export default function LandingEditor() {
   // Para drag & drop de items dentro de secciones
   const [draggedItemState, setDraggedItemState] = useState<{
     sectionId: string;
-    itemType: "gallery" | "featured-category" | "hero";
+    itemType: "gallery" | "featured-category" | "hero" | "vip";
     fromIndex: number;
   } | null>(null);
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">(
@@ -929,15 +929,112 @@ export default function LandingEditor() {
     });
   };
 
-  // ������������������������ Reordenar items dentro de featured categories ������������������������������������������������������������
-  const reorderFeaturedCategoryItems = async (
+  // ─────────────────────────────────────────────────────────────────────────────
+  // VIP Products Items
+  // ─────────────────────────────────────────────────────────────────────────────
+  const updateVIPItems = async (
+    sectionIndex: number,
+    updater: (items: {
+      badge?: string;
+      title?: string;
+      subtitle?: string;
+      buttonText?: string;
+      buttonLink?: string;
+      image?: string;
+    }[]) => {
+      badge?: string;
+      title?: string;
+      subtitle?: string;
+      buttonText?: string;
+      buttonLink?: string;
+      image?: string;
+    }[]
+  ) => {
+    const updated = [...sections];
+    const current = updated[sectionIndex];
+    if (!current) return;
+
+    const currentItems = ((current.props?.items as any[]) || []) as {
+      badge?: string;
+      title?: string;
+      subtitle?: string;
+      buttonText?: string;
+      buttonLink?: string;
+      image?: string;
+    }[];
+
+    const newItems = updater(currentItems);
+
+    updated[sectionIndex] = {
+      ...current,
+      props: {
+        ...(current.props || {}),
+        items: newItems,
+      },
+    };
+
+    setSections(updated);
+    setSaving(true);
+    await saveLandingSections(updated);
+    setSaving(false);
+  };
+
+  const handleAddVIPItem = async (sectionIndex: number) => {
+    await updateVIPItems(sectionIndex, (items) => [
+      ...items,
+      { badge: "", title: "", subtitle: "", buttonText: "VER MÁS 👀", buttonLink: "", image: "" },
+    ]);
+  };
+
+  const handleVIPItemFieldChange = async (
+    sectionIndex: number,
+    itemIndex: number,
+    field: string,
+    value: string
+  ) => {
+    await updateVIPItems(sectionIndex, (items) => {
+      const copy = [...items];
+      const current = copy[itemIndex] || {};
+      copy[itemIndex] = { ...current, [field]: value };
+      return copy;
+    });
+  };
+
+  const handleVIPItemImage = async (
+    e: ChangeEvent<HTMLInputElement>,
+    sectionIndex: number,
+    itemIndex: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadLandingImage(file, `vip-${sectionIndex}-${itemIndex}`);
+
+    await updateVIPItems(sectionIndex, (items) => {
+      const copy = [...items];
+      const current = copy[itemIndex] || {};
+      copy[itemIndex] = { ...current, image: url };
+      return copy;
+    });
+  };
+
+  const handleRemoveVIPItem = async (
+    sectionIndex: number,
+    itemIndex: number
+  ) => {
+    await updateVIPItems(sectionIndex, (items) =>
+      items.filter((_, idx) => idx !== itemIndex)
+    );
+  };
+
+  const reorderVIPItems = async (
     sectionIndex: number,
     fromIndex: number,
     toIndex: number
   ) => {
     if (fromIndex === toIndex) return;
 
-    await updateFeaturedCategoryItems(sectionIndex, (items) => {
+    await updateVIPItems(sectionIndex, (items) => {
       const copy = [...items];
       const [item] = copy.splice(fromIndex, 1);
       copy.splice(toIndex, 0, item);
@@ -945,6 +1042,7 @@ export default function LandingEditor() {
     });
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
 
 
   const getResolvedHeroIndex = (sectionId: string, itemCount: number) => {
@@ -1116,6 +1214,21 @@ export default function LandingEditor() {
     await updateFeaturedCategoryItems(sectionIndex, (items) =>
       items.filter((_, idx) => idx !== itemIndex)
     );
+  };
+
+  const reorderFeaturedCategoryItems = async (
+    sectionIndex: number,
+    fromIndex: number,
+    toIndex: number
+  ) => {
+    if (fromIndex === toIndex) return;
+
+    await updateFeaturedCategoryItems(sectionIndex, (items) => {
+      const copy = [...items];
+      const [item] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, item);
+      return copy;
+    });
   };
 
   const removeSection = async (id: string) => {
@@ -2449,6 +2562,202 @@ export default function LandingEditor() {
                                                 add
                                               </span>
                                               Agregar otra categor+�a
+                                            </button>
+                                          </>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
+
+                                {/* Editor de productos VIP */}
+                                {section.type === "vipProducts" &&
+                                  currentTab === "content" && (
+                                    <div className="mt-3 border border-dashed border-slate-200 rounded-md p-3 bg-slate-50 dark:bg-slate-900">
+                                      <h4 className="text-xs font-semibold uppercase text-slate-500 mb-2 flex items-center gap-1">
+                                        <span className="material-icons-round text-[14px] text-purple-500">
+                                          workspace_premium
+                                        </span>
+                                        Productos VIP
+                                      </h4>
+                                      {(() => {
+                                        const vipItems = ((section.props?.items as any[]) || []) as {
+                                          badge?: string;
+                                          title?: string;
+                                          subtitle?: string;
+                                          buttonText?: string;
+                                          buttonLink?: string;
+                                          image?: string;
+                                        }[];
+
+                                        if (!vipItems.length) {
+                                          return (
+                                            <div className="space-y-2">
+                                              <p className="text-[11px] text-slate-500">
+                                                No hay productos VIP aún. Agrega productos destacados usando el botón de abajo.
+                                              </p>
+                                              <button
+                                                type="button"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-purple-600 text-white text-xs hover:bg-purple-700"
+                                                onClick={() => handleAddVIPItem(idx)}
+                                              >
+                                                <span className="material-icons-round text-[14px]">
+                                                  add
+                                                </span>
+                                                Agregar producto VIP
+                                              </button>
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
+                                          <>
+                                            <div className="flex flex-col gap-3">
+                                              {vipItems.map((item, itemIndex) => {
+                                                const isDragging = draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "vip" && draggedItemState?.fromIndex === itemIndex;
+                                                return (
+                                                  <div
+                                                    key={itemIndex}
+                                                    draggable
+                                                    onDragStart={() => setDraggedItemState({ sectionId: section.id, itemType: "vip", fromIndex: itemIndex })}
+                                                    onDragEnd={() => setDraggedItemState(null)}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    onDrop={async (e) => {
+                                                      e.preventDefault();
+                                                      if (draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "vip") {
+                                                        await reorderVIPItems(idx, draggedItemState.fromIndex, itemIndex);
+                                                        setDraggedItemState(null);
+                                                      }
+                                                    }}
+                                                    className={`rounded-lg border p-3 flex flex-col gap-3 transition-all cursor-grab active:cursor-grabbing ${
+                                                      isDragging
+                                                        ? "opacity-50 scale-95 border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-md"
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                      <span className="text-[11px] font-semibold text-slate-500">
+                                                        Producto VIP {itemIndex + 1}
+                                                      </span>
+                                                      <button
+                                                        type="button"
+                                                        className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700"
+                                                        onClick={() => handleRemoveVIPItem(idx, itemIndex)}
+                                                      >
+                                                        Quitar
+                                                      </button>
+                                                    </div>
+                                                    
+                                                    <input
+                                                      type="text"
+                                                      className="border rounded px-2 py-1 text-xs"
+                                                      placeholder="Badge (ej: ¿CANSADA DE LA LIMPIEZA?)"
+                                                      value={item.badge || ""}
+                                                      onChange={(e) =>
+                                                        handleVIPItemFieldChange(
+                                                          idx,
+                                                          itemIndex,
+                                                          "badge",
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                    
+                                                    <input
+                                                      type="text"
+                                                      className="border rounded px-2 py-1 text-xs font-semibold"
+                                                      placeholder="Título (ej: Aspiradora SWIFT)"
+                                                      value={item.title || ""}
+                                                      onChange={(e) =>
+                                                        handleVIPItemFieldChange(
+                                                          idx,
+                                                          itemIndex,
+                                                          "title",
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                    
+                                                    <textarea
+                                                      className="border rounded px-2 py-1 text-xs resize-none"
+                                                      placeholder="Subtítulo/Descripción"
+                                                      rows={2}
+                                                      value={item.subtitle || ""}
+                                                      onChange={(e) =>
+                                                        handleVIPItemFieldChange(
+                                                          idx,
+                                                          itemIndex,
+                                                          "subtitle",
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                    
+                                                    <input
+                                                      type="text"
+                                                      className="border rounded px-2 py-1 text-xs"
+                                                      placeholder="Texto del botón (ej: VER MÁS 👀)"
+                                                      value={item.buttonText || ""}
+                                                      onChange={(e) =>
+                                                        handleVIPItemFieldChange(
+                                                          idx,
+                                                          itemIndex,
+                                                          "buttonText",
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                    
+                                                    <input
+                                                      type="text"
+                                                      className="border rounded px-2 py-1 text-xs"
+                                                      placeholder="Enlace del botón (ej: /product-detail/aspiradora-swift)"
+                                                      value={item.buttonLink || ""}
+                                                      onChange={(e) =>
+                                                        handleVIPItemFieldChange(
+                                                          idx,
+                                                          itemIndex,
+                                                          "buttonLink",
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                    />
+                                                    
+                                                    <div className="space-y-1">
+                                                      {item.image && (
+                                                        <div className="aspect-video rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                          <img
+                                                            src={item.image}
+                                                            alt={item.title || "Producto VIP"}
+                                                            className="w-full h-full object-cover"
+                                                          />
+                                                        </div>
+                                                      )}
+                                                      <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="text-[11px]"
+                                                        onChange={(e) =>
+                                                          handleVIPItemImage(
+                                                            e,
+                                                            idx,
+                                                            itemIndex
+                                                          )
+                                                        }
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                            <button
+                                              type="button"
+                                              className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded bg-purple-600 text-white text-xs hover:bg-purple-700"
+                                              onClick={() => handleAddVIPItem(idx)}
+                                            >
+                                              <span className="material-icons-round text-[14px]">
+                                                add
+                                              </span>
+                                              Agregar otro producto VIP
                                             </button>
                                           </>
                                         );

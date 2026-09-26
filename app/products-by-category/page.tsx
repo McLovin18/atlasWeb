@@ -325,7 +325,12 @@ export default function ProductsByCategoryPage() {
     }`;
 
   const inputCls =
-    "px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-#e8c862 transition-all";
+    "px-3 py-2 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-#e8c862 transition-all";
+  const inputStyle = {
+    borderColor: "var(--border)",
+    background: "var(--bgSecondary)",
+    color: "var(--text)"
+  };
 
   return (
     <div className="min-h-screen flex flex-col transition-colors" style={{ background: "var(--bg)", color: "var(--text)" }}>
@@ -336,7 +341,7 @@ export default function ProductsByCategoryPage() {
         {/* Cabecera */}
         {(categoriaId || subcategoriaId || subsubcategoriaId) && (
           <div className="mb-4">
-            <nav className="flex items-center gap-1 text-xs text-slate-400 dark:text-white/30 mb-1 select-none">
+            <nav style={{ color: "var(--textSecondary)" }} className="flex items-center gap-1 text-xs mb-1 select-none">
               <span className="hover:underline cursor-pointer" onClick={() => window.location.href = '/products-by-category'}>Categorías</span>
               {categoriaId && (
                 <>
@@ -353,11 +358,11 @@ export default function ProductsByCategoryPage() {
               {subsubcategoriaId && (
                 <>
                   <span className="mx-1">›</span>
-                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoriaId)}</span>
+                  <span style={{ color: "var(--text)" }} className="font-semibold">{getSubsubcategoryName(subsubcategoriaId)}</span>
                 </>
               )}
             </nav>
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+            <h1 style={{ color: "var(--text)" }} className="text-xl sm:text-2xl font-bold leading-tight">
               {subsubcategoriaId
                 ? getSubsubcategoryName(subsubcategoriaId)
                 : subcategoriaId
@@ -368,10 +373,10 @@ export default function ProductsByCategoryPage() {
         )}
 
         {/* Filtros horizontales */}
-        <div className=" dark:bg-white/3 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3.5 mb-5 space-y-3 shadow-sm">
+        <div style={{ background: "var(--cardBg)", borderColor: "var(--border)" }} className="border rounded-2xl px-4 py-3.5 mb-5 space-y-3 shadow-sm">
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative flex-1 min-w-40 max-w-[min(75vw,300px)] sm:max-w-sm">
-              <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-[17px] pointer-events-none">
+              <span style={{ color: "var(--textSecondary)" }} className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-[17px] pointer-events-none">
                 search
               </span>
               <input
@@ -379,10 +384,11 @@ export default function ProductsByCategoryPage() {
                 placeholder="Buscar productos..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                style={inputStyle}
                 className={`${inputCls} w-full pl-9 pr-8`}
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white/80">
+                <button onClick={() => setSearch("")} style={{ color: "var(--textSecondary)" }} className="absolute right-2.5 top-1/2 -translate-y-1/2 hover:text-[var(--text)]">
                   <span className="material-icons-round text-[15px]">close</span>
                 </button>
               )}
@@ -398,10 +404,13 @@ export default function ProductsByCategoryPage() {
               <button
                 type="button"
                 onClick={selectTodas}
+                style={{
+                  background: !categoriaId ? "var(--primary)" : "var(--cardBg)",
+                  borderColor: !categoriaId ? "var(--primary)" : "var(--border)",
+                  color: !categoriaId ? "var(--primaryForeground)" : "var(--text)"
+                }}
                 className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all ${
-                  !categoriaId
-                    ? "shadow-sm scale-105 bg-black text-white border border-black"
-                    : "bg-white text-slate-900 border border-slate-300 hover:border-black/60 hover:shadow-sm"
+                  !categoriaId ? "shadow-sm scale-105" : "hover:border-[var(--primary)] hover:shadow-sm"
                 }`}
               >
                 Todas
@@ -411,10 +420,13 @@ export default function ProductsByCategoryPage() {
                   key={cat.id}
                   type="button"
                   onClick={() => selectCategoria(cat.id)}
+                  style={{
+                    background: sameCategoryId(categoriaId, cat.id) ? "var(--primary)" : "var(--cardBg)",
+                    borderColor: sameCategoryId(categoriaId, cat.id) ? "var(--primary)" : "var(--border)",
+                    color: sameCategoryId(categoriaId, cat.id) ? "var(--primaryForeground)" : "var(--text)"
+                  }}
                   className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all ${
-                    sameCategoryId(categoriaId, cat.id)
-                      ? "shadow-sm scale-105 bg-black text-white border border-black"
-                      : "bg-white text-slate-900 border border-slate-300 hover:border-black/60 hover:shadow-sm"
+                    sameCategoryId(categoriaId, cat.id) ? "shadow-sm scale-105" : "hover:border-[var(--primary)] hover:shadow-sm"
                   }`}
                 >
                   {cat.icono && <span className="mr-1">🏷️</span>}
@@ -433,12 +445,12 @@ export default function ProductsByCategoryPage() {
           </div>
         ) : productosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
-              <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">search_off</span>
+            <div style={{ background: "var(--bgSecondary)" }} className="w-16 h-16 rounded-2xl flex items-center justify-center">
+              <span style={{ color: "var(--textSecondary)" }} className="material-icons-round text-3xl">search_off</span>
             </div>
             <div>
-              <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
-              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-60">Prueba otros términos o ajusta los filtros</p>
+              <p style={{ color: "var(--text)" }} className="font-semibold">Sin resultados</p>
+              <p style={{ color: "var(--textSecondary)" }} className="text-sm mt-1 max-w-60">Prueba otros términos o ajusta los filtros</p>
             </div>
           </div>
         ) : (
@@ -448,8 +460,6 @@ export default function ProductsByCategoryPage() {
                 <ProductoCard
                   key={p.id}
                   producto={p}
-                  showCart
-                  showEye
                   showFav={isAuthenticated}
                   isCompact={false}
                 />
@@ -459,7 +469,8 @@ export default function ProductsByCategoryPage() {
             {totalPages > 1 && (
               <div className="flex flex-wrap justify-center items-center gap-2 mt-8 select-none w-full">
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
@@ -468,14 +479,20 @@ export default function ProductsByCategoryPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                   <button
                     key={n}
-                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-black border-black text-white shadow-sm' : 'bg-white border-slate-300 text-slate-900 hover:border-black/60'}`}
+                    style={{
+                      background: currentPage === n ? "var(--primary)" : "var(--cardBg)",
+                      borderColor: currentPage === n ? "var(--primary)" : "var(--border)",
+                      color: currentPage === n ? "var(--primaryForeground)" : "var(--text)"
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all hover:border-[var(--primary)]`}
                     onClick={() => setCurrentPage(n)}
                   >
                     {n}
                   </button>
                 ))}
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >

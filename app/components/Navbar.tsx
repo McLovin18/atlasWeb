@@ -13,6 +13,8 @@ import {
 import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
 import { productMatches } from "../lib/search-utils";
+import ThemeToggle from "./ThemeToggle";
+import { themeManager } from "./themeManager";
 
 // ─────────────────────────────────────────────
 // Acordeón de categorías para el drawer móvil
@@ -32,14 +34,14 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
   return (
     <div className="flex flex-col gap-1 my-3">
       <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-1"
-        style={{ color: "rgba(255,255,255,0.7)" }}>
+        style={{ color: "var(--textSecondary)" }}>
         Categorías
       </p>
       {categorias.map((cat) => (
         <div key={cat.id}>
           <button
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
-            style={{ color: "#ffffff" }}
+            style={{ color: "var(--text)" }}
             onClick={() =>
               setOpenCat(openCat === cat.id ? null : cat.id)
             }
@@ -57,7 +59,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
               <span
                 className="material-icons-round text-sm transition-transform duration-200"
                 style={{
-                  color: "#ffffff",
+                  color: "var(--text)",
                   transform: openCat === cat.id ? "rotate(180deg)" : "rotate(0deg)",
                 }}
               >
@@ -68,14 +70,14 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
 
           {cat.subcategorias?.length > 0 && openCat === cat.id && (
             <div className="ml-4 mb-1 rounded-xl overflow-hidden border"
-              style={{ borderColor: "rgba(255,255,255,0.2)" }}>
+              style={{ borderColor: "var(--border)" }}>
               {cat.subcategorias.map((sub: any) => (
                 <div key={sub.id}>
                   {sub.subcategorias?.length > 0 ? (
                     <>
                       <button
                         className="w-full flex items-center justify-between px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
-                        style={{ color: "#ffffff" }}
+                        style={{ color: "var(--text)" }}
                         onClick={() =>
                           setOpenSub(openSub === sub.id ? null : sub.id)
                         }
@@ -84,7 +86,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                         <span
                           className="material-icons-round text-sm transition-transform duration-200"
                           style={{
-                            color: "#ffffff",
+                            color: "var(--text)",
                             transform:
                               openSub === sub.id
                                 ? "rotate(180deg)"
@@ -96,13 +98,13 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                       </button>
                       {openSub === sub.id && (
                         <div className="ml-3 border-l"
-                          style={{ borderColor: "rgba(255,255,255,0.2)" }}>
+                          style={{ borderColor: "var(--border)" }}>
                           {sub.subcategorias.map((subsub: any) => (
                             <a
                               key={subsub.id}
                               href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
                               className="block px-4 py-2 text-xs transition-colors"
-                              style={{ color: "rgba(255,255,255,0.7)" }}
+                              style={{ color: "var(--textSecondary)" }}
                             >
                               {subsub.nombre}
                             </a>
@@ -114,7 +116,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                     <a
                       href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
                       className="block px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
-                      style={{ color: "#ffffff" }}
+                      style={{ color: "var(--text)" }}
                     >
                       {sub.nombre}
                     </a>
@@ -128,7 +130,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
             <a
               href={`${basePath}?cat=${cat.id}`}
               className="block px-3 py-2 text-sm"
-              style={{ color: "#ffffff" }}
+              style={{ color: "var(--text)" }}
             >
               {cat.nombre}
             </a>
@@ -151,6 +153,19 @@ export const Navbar = () => {
   const [openSubId, setOpenSubId] = useState<string | null>(null); // Para dropdown nivel 2 en tablet/desktop
   const { user, carrito } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  const [theme, setTheme] = useState("dark");
+
+  // Detect theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      const currentTheme = themeManager.getTheme();
+      setTheme(currentTheme);
+    };
+    checkTheme();
+    const handler = () => checkTheme();
+    window.addEventListener('theme-changed', handler);
+    return () => window.removeEventListener('theme-changed', handler);
+  }, []);
   
 
   // Barra de búsqueda
@@ -251,6 +266,11 @@ export const Navbar = () => {
     "🚛 Envíos a todo el Ecuador incluyendo las Islas Galápagos",
   ];
 
+  // Logo paths - AGREGA TUS LOGOS AQUÍ
+  const logoDark = "/logo-dark.png"; // Logo para modo oscuro
+  const logoLight = "/logo-light.png"; // Logo para modo claro
+  const logoSrc = theme === "light" ? logoLight : logoDark;
+
   const handleSearch = () => {
     if (!searchValue.trim()) return;
     let target = `/search-results?query=${encodeURIComponent(searchValue.trim())}`;
@@ -265,16 +285,20 @@ export const Navbar = () => {
       {/* ══════════════════ NAVBAR ══════════════════ */}
       <nav
         className="sticky top-0 z-40 border-b py-3 shadow-sm backdrop-blur-md"
-        style={{ background: "#111827", backgroundColor: "black", borderColor: "rgba(255,255,255,0.08)" }}
+        style={{ 
+          background: theme === "light" ? "rgba(255, 255, 255, 0.8)" : "#111827", 
+          borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.08)" 
+        }}
       >
         {/* ── Header principal ── */}
         <div
           className="relative flex items-center justify-between gap-4 px-4 py-2 lg:px-6 lg:py-2"
-          style={{ color: "#ffffff" }}
+          style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
         >
           <div className="flex items-center gap-3 shrink-0">
             <button
-              className="lg:hidden p-2 rounded-xl transition-colors text-white hover:bg-white/10"
+              className="lg:hidden p-2 rounded-xl transition-colors hover:bg-white/10"
+              style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
               onClick={() => setMobileOpen(true)}
               aria-label="Abrir menú"
             >
@@ -286,7 +310,8 @@ export const Navbar = () => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="px-3 py-2 rounded-xl text-sm font-medium text-white transition-colors hover:bg-white/10 whitespace-nowrap text-body"
+                  className="px-3 py-2 rounded-xl text-sm font-medium transition-colors hover:bg-white/10 whitespace-nowrap text-body"
+                  style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                 >
                   {link.label}
                 </Link>
@@ -298,11 +323,16 @@ export const Navbar = () => {
           <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 flex items-center pointer-events-none">
             <a
               href={user ? "/admin" : "/"}
-              className="flex items-center gap-2 shrink-0 text-white pointer-events-auto"
+              className="flex items-center gap-2 shrink-0 pointer-events-auto"
             >
-              <span className="font-heading font-bold tracking-tight whitespace-nowrap text-3xl sm:text-4xl">
-                ATLAS
-              </span>
+              <Image
+                src={logoSrc}
+                alt="ATLAS"
+                width={150}
+                height={40}
+                className="h-8 w-auto"
+                priority
+              />
             </a>
           </div>
 
@@ -311,7 +341,8 @@ export const Navbar = () => {
               {!searchOpen ? (
                 <button
                   type="button"
-                  className="flex items-center justify-center w-10 h-10 rounded-xl text-white transition-colors hover:bg-white/10"
+                  className="hidden lg:flex items-center justify-center w-10 h-10 rounded-xl transition-colors hover:bg-white/10"
+                  style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                   onClick={() => setSearchOpen(true)}
                   aria-label="Buscar"
                 >
@@ -413,16 +444,21 @@ export const Navbar = () => {
                 </div>
               )}
             </div>
+            <ThemeToggle />
             <div className="relative flex flex-col items-center">
               <a
                 href={user ? "/admin/cart" : "/cart"}
-                className="flex items-center justify-center px-1 rounded-xl transition-colors text-white hover:bg-white/10"
+                className="flex items-center justify-center px-1 rounded-xl transition-colors hover:bg-white/10"
+                style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                 aria-label="Carrito"
                 data-onboarding="carrito"
               >
                 <span className="material-icons-round text-xl">shopping_cart</span>
                 {carrito && carrito.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-[#111827] z-10">
+                  <span 
+                    className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 z-10"
+                    style={{ borderColor: theme === "light" ? "#ffffff" : "#111827" }}
+                  >
                     {carrito.length}
                   </span>
                 )}
@@ -441,10 +477,14 @@ export const Navbar = () => {
                     <img
                       src={user.photoURL}
                       alt="Foto de perfil"
-                      className="w-9 h-9 rounded-full object-cover border-2 border-white"
+                      className="w-9 h-9 rounded-full object-cover border-2"
+                      style={{ borderColor: theme === "light" ? "#e2e8f0" : "#ffffff" }}
                     />
                   ) : (
-                    <span className="material-icons-round text-3xl text-white">
+                    <span 
+                      className="material-icons-round text-3xl"
+                      style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
+                    >
                       account_circle
                     </span>
                   )}
@@ -492,7 +532,13 @@ export const Navbar = () => {
           </div>
         </div>
 
-        <div className="hidden items-center justify-center gap-1 px-6 border-t flex-wrap" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        <div 
+          className="hidden items-center justify-center gap-1 px-6 border-t flex-wrap"
+          style={{ 
+            borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.08)",
+            color: theme === "light" ? "#0f172a" : "#ffffff"
+          }}
+        >
           {/* Categorías dinámicas */}
           {/* Categorías dinámicas */}
           {categorias.map((cat) => (
@@ -505,15 +551,20 @@ export const Navbar = () => {
               {cat.subcategorias?.length > 0 ? (
                 <button
                   onClick={() => setOpenCatId(openCatId === cat.id ? null : cat.id)}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm"
+                  style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                 >
                   {cat.icono && (
-                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
+                    <span className="material-icons-round" style={{ fontSize: 15, color: "#E0A11A" }}>{cat.icono}</span>
                   )}
-                  <span className="dark:text-white">{cat.nombre}</span>
+                  <span>{cat.nombre}</span>
                   <span
-                    className="material-icons-round dark:text-white transition-transform duration-200"
-                    style={{ fontSize: 14, transform: openCatId === cat.id ? "rotate(180deg)" : "rotate(0deg)" }}
+                    className="material-icons-round transition-transform duration-200"
+                    style={{ 
+                      fontSize: 14, 
+                      transform: openCatId === cat.id ? "rotate(180deg)" : "rotate(0deg)",
+                      color: theme === "light" ? "#0f172a" : "#ffffff"
+                    }}
                   >
                     arrow_drop_down
                   </span>
@@ -521,12 +572,13 @@ export const Navbar = () => {
               ) : (
                 <Link
                   href={`${basePath}?cat=${cat.id}`}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm"
+                  style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                 >
                   {cat.icono && (
-                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
+                    <span className="material-icons-round" style={{ fontSize: 15, color: "#E0A11A" }}>{cat.icono}</span>
                   )}
-                  <span className="dark:text-white">{cat.nombre}</span>
+                  <span>{cat.nombre}</span>
                 </Link>
               )}
 
@@ -609,21 +661,23 @@ export const Navbar = () => {
         >
           <div
             className="absolute left-0 top-0 w-[85vw] max-w-xs max-h-[calc(100vh-80px)] overflow-y-auto shadow-2xl flex flex-col"
-            style={{ background: "#000000", color: "#ffffff" }}
+            style={{ 
+              background: theme === "light" ? "#ffffff" : "#000000", 
+              color: theme === "light" ? "#0f172a" : "#ffffff" 
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header drawer */}
             <div
               className="flex items-center justify-between px-5 py-4 border-b"
-              style={{ borderColor: "rgba(255,255,255,0.1)" }}
+              style={{ borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.1)" }}
             >
-                              <span className="font-bold text-base" style={{ color: "#ffffff" }}>
+                              <span className="font-bold text-base">
                 Importadora Atlas
               </span>
               <button
                 onClick={() => setMobileOpen(false)}
                 className="p-1.5 rounded-xl transition-colors"
-                style={{ color: "#ffffff" }}
               >
                 <span className="material-icons-round text-xl">close</span>
               </button>
@@ -633,7 +687,10 @@ export const Navbar = () => {
               {/* Búsqueda móvil */}
               <form
                 className="relative flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
-                style={{ background: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.2)" }}
+                style={{ 
+                  background: theme === "light" ? "#f1f5f9" : "rgba(255,255,255,0.1)", 
+                  borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.2)" 
+                }}
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (searchValue.trim()) {
@@ -642,7 +699,7 @@ export const Navbar = () => {
                   }
                 }}
               >
-                                  <span className="material-icons-round text-lg" style={{ color: "#ffffff" }}>
+                                  <span className="material-icons-round text-lg">
                   search
                 </span>
                 <input
@@ -650,7 +707,6 @@ export const Navbar = () => {
                   type="text"
                   placeholder="Buscar productos..."
                   className="bg-transparent outline-none text-sm flex-1"
-                  style={{ color: "#ffffff" }}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   autoComplete="off"
@@ -661,14 +717,14 @@ export const Navbar = () => {
                   <div
                     className="absolute left-0 top-full mt-1 w-full rounded-xl border shadow-xl z-50 overflow-hidden"
                     style={{
-                      background: "#000000",
-                      borderColor: "rgba(255,255,255,0.2)",
+                      background: theme === "light" ? "#ffffff" : "#000000",
+                      borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.2)",
                       maxHeight: 300,
                       overflowY: "auto",
                     }}
                   >
                     {searchLoading ? (
-                      <div className="p-4 text-center text-sm" style={{ color: "#ffffff" }}>
+                      <div className="p-4 text-center text-sm" style={{ color: theme === "light" ? "#64748b" : "rgba(255,255,255,0.6)" }}>
                         Buscando...
                       </div>
                     ) : suggestions.length > 0 ? (
@@ -680,7 +736,7 @@ export const Navbar = () => {
                             key={prod.id}
                             href={href}
                             className="flex items-center gap-3 px-4 py-2.5 transition-colors text-sm"
-                            style={{ color: "#ffffff" }}
+                            style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
                               setMobileOpen(false);
@@ -696,7 +752,7 @@ export const Navbar = () => {
                             )}
                             <span className="truncate flex-1">{prod.nombre}</span>
                             {prod.marca && (
-                              <span className="text-xs shrink-0" style={{ color: "rgba(255,255,255,0.6)" }}>
+                              <span className="text-xs shrink-0" style={{ color: theme === "light" ? "#64748b" : "rgba(255,255,255,0.6)" }}>
                                 {prod.marca}
                               </span>
                             )}
@@ -704,7 +760,7 @@ export const Navbar = () => {
                         );
                       })
                     ) : (
-                      <div className="p-4 text-center text-sm" style={{ color: "#ffffff" }}>
+                      <div className="p-4 text-center text-sm" style={{ color: theme === "light" ? "#64748b" : "rgba(255,255,255,0.6)" }}>
                         Sin resultados
                       </div>
                     )}
@@ -718,7 +774,7 @@ export const Navbar = () => {
                   key={link.href}
                   href={link.href}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                  style={{ color: "#ffffff" }}
+                  style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                 >
                   {link.label}
                 </a>
@@ -728,8 +784,8 @@ export const Navbar = () => {
               <MobileCategoriesAccordion basePath={basePath} />
 
               {/* Divisor */}
-              <div className="border-t my-2" style={{ borderColor: "rgba(255,255,255,0.1)" }} />
-              <div className="border-t my-2" style={{ borderColor: "rgba(255,255,255,0.1)" }} />
+              <div className="border-t my-2" style={{ borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.1)" }} />
+              <div className="border-t my-2" style={{ borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.1)" }} />
 
               {/* Usuario - Opciones si está autenticado */}
               {user && (
@@ -737,7 +793,7 @@ export const Navbar = () => {
                   <a
                     href="/admin/perfil"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors"
-                    style={{ color: "#ffffff" }}
+                    style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                   >
                     <span className="material-icons-round text-base">person</span>
                     Perfil
@@ -745,7 +801,7 @@ export const Navbar = () => {
                   <a
                     href="/admin/config"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors"
-                    style={{ color: "#ffffff" }}
+                    style={{ color: theme === "light" ? "#0f172a" : "#ffffff" }}
                   >
                     <span className="material-icons-round text-base">settings</span>
                     Configuración

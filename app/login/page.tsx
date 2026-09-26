@@ -114,14 +114,16 @@ export default function LoginPage() {
   }
 
   // --- Input class helper ---
+  const inputStyle = {
+    borderColor: "var(--border)",
+    background: "var(--bgSecondary)",
+    color: "var(--text)"
+  };
   const inputClass =
-    "w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 " +
-    "bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white " +
-    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent " +
-    "placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-200";
+    "w-full px-4 py-3.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-white/30 transition-all duration-200";
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)", color: "var(--text)" }}>
       <BottomBarPublic />
 
       {/* Hero header */}
@@ -131,17 +133,17 @@ export default function LoginPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">
+        <h1 style={{ color: "var(--text)" }} className="text-3xl font-extrabold tracking-tight mb-2">
           Importadora Atlas
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 text-base">
+        <p style={{ color: "var(--textSecondary)" }} className="text-base">
           Acceso exclusivo para administración.
         </p>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-md mx-auto px-4 pb-16 flex-1 flex flex-col justify-start">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div style={{ background: "var(--cardBg)", borderColor: "var(--border)" }} className="rounded-2xl shadow-sm border overflow-hidden">
 
           <div className="p-6 md:p-8">
             {/* Alert */}
@@ -162,7 +164,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-4" noValidate>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                <label style={{ color: "var(--textSecondary)" }} className="block text-xs font-medium mb-1.5 uppercase tracking-wider">
                   Correo electrónico
                 </label>
                 <input
@@ -171,11 +173,12 @@ export default function LoginPage() {
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   autoComplete="email"
+                  style={inputStyle}
                   className={inputClass}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                <label style={{ color: "var(--textSecondary)" }} className="block text-xs font-medium mb-1.5 uppercase tracking-wider">
                   Contraseña
                 </label>
                 <div className="relative">
@@ -185,6 +188,7 @@ export default function LoginPage() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     autoComplete="current-password"
+                    style={inputStyle}
                     className={inputClass + " pr-12"}
                   />
                   <button
@@ -240,13 +244,13 @@ export default function LoginPage() {
         </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-slate-400 dark:text-slate-600 mt-6">
+        <p style={{ color: "var(--textSecondary)" }} className="text-center text-xs mt-6">
           Al continuar, aceptas nuestros{" "}
-          <a href="/terminos" className="underline hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
+          <a href="/terminos" className="underline hover:text-[var(--text)] transition-colors">
             Términos de uso
           </a>{" "}
           y{" "}
-          <a href="/privacidad" className="underline hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
+          <a href="/privacidad" className="underline hover:text-[var(--text)] transition-colors">
             Política de privacidad
           </a>.
         </p>

@@ -69,7 +69,7 @@ export default function BannerSection({
   return (
     <section
       style={{
-        ...(bg ? { backgroundColor: bg } : {}),
+        ...(bg ? { backgroundColor: bg } : { backgroundColor: "var(--bg)" }),
         ...(color ? { color } : {}),
         paddingTop,
         paddingBottom,
@@ -77,8 +77,8 @@ export default function BannerSection({
       className="py-20 overflow-hidden m-0"
     >
       <div
-        className="overflow-hidden bg-slate-900/40 dark:bg-slate-900/80 flex flex-col justify-center items-center"
-        style={{ borderRadius }}
+        className="overflow-hidden flex flex-col justify-center items-center"
+        style={{ borderRadius, background: "var(--bgSecondary)" }}
       >
         {finalBackgroundImage && (
           <div className="w-full aspect-[7/3] min-h-[220px] relative">

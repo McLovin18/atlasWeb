@@ -40,7 +40,7 @@ export default function FeaturedCategoriesSection({
   return (
     <section
       style={{
-        ...(bg ? { backgroundColor: bg } : {}),
+        ...(bg ? { backgroundColor: bg } : { backgroundColor: "var(--bg)" }),
         ...(color ? { color } : {}),
         paddingTop,
         paddingBottom,

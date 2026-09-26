@@ -7,6 +7,7 @@ import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
 import { getCatalogPricing } from "../lib/pricing";
+import { themeManager } from "./themeManager";
 
 
 
@@ -33,16 +34,81 @@ const cardStyles = `
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background: #000000;
+    background: var(--cardBg);
     overflow: hidden;
     cursor: pointer;
-    border: 1px solid black;
+    border: 1px solid var(--border);
     transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  /* Override for light theme - highest specificity */
+  html.light .pc-card {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
   }
 
   .pc-card:hover {
     border-color: #7B9BC0;
     box-shadow: 0 8px 40px rgba(212,175,55,0.18);
+  }
+
+  /* ── nombre ── */
+  .pc-name {
+    color: var(--text);
+    transition: color 0.25s ease;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  html.light .pc-name {
+    color: #0f172a !important;
+  }
+
+  @media (min-width: 640px) {
+    .pc-name {
+    font-size: 22px;
+    }
+  }
+
+  /* precio */
+  .pc-prices {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+
+  .pc-price-final {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    transition: color 0.25s ease;
+  }
+
+  html.light .pc-price-final {
+    color: #0f172a !important;
+  }
+
+  @media (min-width: 640px) {
+    .pc-price-final {
+      font-size: 15px;
+    }
+  }
+
+  .pc-price-old {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--textSecondary);
+    text-decoration: line-through;
+    transition: color 0.25s ease;
+  }
+
+  html.light .pc-price-old {
+    color: #64748b !important;
   }
 
   /* ── imagen ── */
@@ -58,6 +124,10 @@ const cardStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  html.light .pc-img-wrap {
+    background: #f1f5f9 !important;
   }
 
   /* Altura siempre llena el contenedor; el ancho se ajusta de forma
@@ -171,7 +241,7 @@ const cardStyles = `
 
   /* nombre */
   .pc-name {
-    color: #ffffff;
+    color: var(--text);
     transition: color 0.25s ease;
     font-size: 12px;
     font-weight: 700;
@@ -196,7 +266,7 @@ const cardStyles = `
     font-family: 'Barlow', sans-serif;
     font-weight: 700;
     font-size: 13px;
-    color: #ffffff;
+    color: var(--text);
     letter-spacing: 0.02em;
     transition: color 0.25s ease;
   }
@@ -211,7 +281,7 @@ const cardStyles = `
     font-family: 'Barlow', sans-serif;
     font-weight: 400;
     font-size: 11px;
-    color: rgba(255,255,255,0.35);
+    color: var(--textSecondary);
     text-decoration: line-through;
     transition: color 0.25s ease;
   }
@@ -244,6 +314,48 @@ function ProductoCard({
   isCompact?: boolean;
 } = {}): JSX.Element | null {
   if (!producto || !producto.id) return null;
+
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const [isLight, setIsLight] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkTheme = () => {
+      const currentTheme = themeManager.getTheme();
+      const light = currentTheme === 'light';
+      setIsLight(light);
+      
+      if (cardRef.current) {
+        const card = cardRef.current;
+        if (light) {
+          card.style.background = '#ffffff';
+          card.style.borderColor = '#e2e8f0';
+        } else {
+          card.style.background = '';
+          card.style.borderColor = '';
+        }
+        
+        // Update text elements
+        const nameEl = card.querySelector('.pc-name') as HTMLElement;
+        const priceFinalEl = card.querySelector('.pc-price-final') as HTMLElement;
+        const priceOldEl = card.querySelector('.pc-price-old') as HTMLElement;
+        
+        if (nameEl) {
+          nameEl.style.color = light ? '#0f172a' : '';
+        }
+        if (priceFinalEl) {
+          priceFinalEl.style.color = light ? '#0f172a' : '';
+        }
+        if (priceOldEl) {
+          priceOldEl.style.color = light ? '#64748b' : '';
+        }
+      }
+    };
+    
+    checkTheme();
+    const handler = () => checkTheme();
+    window.addEventListener('theme-changed', handler);
+    return () => window.removeEventListener('theme-changed', handler);
+  }, []);
 
   const { isLogged, isAdmin, favoritos, addFavorito, removeFavorito } = useUser();
   const router = useRouter();
@@ -307,7 +419,11 @@ function ProductoCard({
           animationDelay: `${index * 80}ms`,
         }}
       >
-        <div className="pc-card" onClick={onClick || goToDetail}>
+        <div 
+          ref={cardRef}
+          className="pc-card" 
+          onClick={onClick || goToDetail}
+        >
           {/* ── IMAGEN ── */}
           <div className="pc-img-wrap">
             {/* Imagen del producto */}
@@ -370,9 +486,4 @@ function ProductoCard({
   );
 }
 
-export default React.memo(ProductoCard, (prevProps, nextProps) => {
-  return (
-    prevProps.producto.id === nextProps.producto.id &&
-    prevProps.showFav === nextProps.showFav
-  );
-});
+export default ProductoCard;

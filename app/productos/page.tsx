@@ -196,25 +196,25 @@ export default function ProductosPage() {
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-6 sm:py-15 flex-1">
 
         {loading ? (
-  <div className="grid grid-cols-1 gap-2 lg:grid-cols-4">
-    {Array.from({ length: 10 }).map((_, i) => (
-      <div key={i} className="rounded-xl overflow-hidden bg-white dark:bg-white/4 border border-slate-100 dark:border-white/10 shadow-sm animate-pulse">
-        {/* Imagen placeholder */}
-        <div className="w-full h-32 sm:h-48 bg-slate-200 dark:bg-white/10" />
-        {/* Contenido placeholder */}
-        <div className="p-1.5 sm:p-4 flex flex-col gap-2">
-          <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-3/4" />
-          <div className="h-4 bg-slate-200 dark:bg-white/10 rounded w-1/2" />
-          <div className="h-6 bg-slate-200 dark:bg-white/10 rounded w-1/3 mt-1" />
-        </div>
-      </div>
-    ))}
-  </div>
-  ) : productosFiltrados.length === 0 ? (
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="rounded-xl overflow-hidden border shadow-sm animate-pulse" style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}>
+                {/* Imagen placeholder */}
+                <div style={{ background: "var(--bgSecondary)" }} className="w-full h-32 sm:h-48" />
+                {/* Contenido placeholder */}
+                <div className="p-1.5 sm:p-4 flex flex-col gap-2">
+                  <div style={{ background: "var(--bgSecondary)" }} className="h-4 rounded w-3/4" />
+                  <div style={{ background: "var(--bgSecondary)" }} className="h-4 rounded w-1/2" />
+                  <div style={{ background: "var(--bgSecondary)" }} className="h-6 rounded w-1/3 mt-1" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : productosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
             <div>
-              <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
-              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-60">
+              <p style={{ color: "var(--text)" }} className="font-semibold">Sin resultados</p>
+              <p style={{ color: "var(--textSecondary)" }} className="text-sm mt-1 max-w-60">
                 Por el momento no hay productos disponibles.
               </p>
             </div>
@@ -227,8 +227,6 @@ export default function ProductosPage() {
                   key={p.id}
                   producto={p}
                   index={index}
-                  showCart
-                  showEye
                   showFav={isAuthenticated}
                   isCompact={false}
                 />
@@ -237,7 +235,8 @@ export default function ProductosPage() {
             {totalPages > 1 && (
               <div className="flex flex-wrap justify-center items-center gap-2 mt-8 select-none w-full">
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
@@ -246,14 +245,20 @@ export default function ProductosPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                   <button
                     key={n}
-                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? "bg-black border-black text-white shadow-sm" : "bg-white border-slate-300 text-slate-900 hover:border-black/60"}`}
+                    style={{
+                      background: currentPage === n ? "var(--primary)" : "var(--cardBg)",
+                      borderColor: currentPage === n ? "var(--primary)" : "var(--border)",
+                      color: currentPage === n ? "var(--primaryForeground)" : "var(--text)"
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all hover:border-[var(--primary)]`}
                     onClick={() => setCurrentPage(n)}
                   >
                     {n}
                   </button>
                 ))}
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >

@@ -411,7 +411,7 @@ export default function HeroSection({
 
         {/* Badge de Google Maps */}
         {current.googleMaps && (current.rating || current.ratingCount) && (
-          <div className="absolute top-3 left-3 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg flex flex-col gap-1 max-w-[180px] sm:max-w-none">
+          <div style={{ background: "var(--cardBg)", borderColor: "var(--border)" }} className="absolute top-3 left-3 z-30 backdrop-blur-sm rounded-xl px-3 py-2 shadow-lg flex flex-col gap-1 max-w-[180px] sm:max-w-none border">
             <div className="flex items-center gap-1.5">
               <svg width="16" height="16" viewBox="0 0 24 24" className="flex-shrink-0">
                 <path
@@ -419,17 +419,17 @@ export default function HeroSection({
                   d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"
                 />
               </svg>
-              <span className="text-xs font-bold text-slate-700 dark:text-white">Google</span>
+              <span style={{ color: "var(--text)" }} className="text-xs font-bold">Google</span>
               <span className="text-xs font-extrabold text-yellow-500">
                 {current.rating?.toFixed(1)}
               </span>
             </div>
             <StarRating rating={current.rating ?? 0} />
-            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+            <span style={{ color: "var(--textSecondary)" }} className="text-[10px]">
               {current.ratingCount?.toLocaleString()} reseñas
             </span>
             {current.generalMessage && (
-              <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-tight">
+              <p style={{ color: "var(--textSecondary)" }} className="text-[10px] leading-tight">
                 {current.generalMessage}
               </p>
             )}
@@ -439,11 +439,13 @@ export default function HeroSection({
         {/* Elementos posicionados personalizados (solo si tienen positioning) */}
         {fieldPositions?.badge && current.badge && (
           <span
-            className="absolute inline-block px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
             style={{
               position: "absolute",
+              background: "var(--cardBg)",
+              color: "var(--text)",
               ...badgeStyle,
             }}
+            className="absolute inline-block px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase rounded-full shadow"
           >
             {current.badge}
           </span>
@@ -451,12 +453,13 @@ export default function HeroSection({
 
         {fieldPositions?.title && current.title && (
           <h2
-            className="absolute text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight drop-shadow-lg"
             style={{
               position: "absolute",
+              color: "var(--text)",
               ...titleStyle,
               maxWidth: "90%",
             }}
+            className="absolute text-xl sm:text-5xl lg:text-5xl font-extrabold leading-tight drop-shadow-lg"
           >
             {current.title}
           </h2>
@@ -464,12 +467,13 @@ export default function HeroSection({
 
         {fieldPositions?.subtitle && current.subtitle && (
           <p
-            className="absolute text-white/80 text-[9px] sm:text-sm drop-shadow"
             style={{
               position: "absolute",
+              color: "var(--textSecondary)",
               ...subtitleStyle,
               maxWidth: "90%",
             }}
+            className="absolute text-[9px] sm:text-sm drop-shadow"
           >
             {current.subtitle}
           </p>
@@ -478,11 +482,13 @@ export default function HeroSection({
         {fieldPositions?.buttonText && current.buttonText && (
           <a
             href={current.buttonLink || "/products-by-category"}
-            className="absolute inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[9px] sm:text-2xl px- py-1.5 sm:px-1 sm:py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
             style={{
               position: "absolute",
+              background: "var(--cardBg)",
+              color: "var(--text)",
               ...buttonTextStyle,
             }}
+            className="absolute inline-flex items-center gap-1 sm:gap-2 hover:bg-[var(--bgSecondary)] font-bold text-[9px] sm:text-2xl px- py-1.5 sm:px-1 sm:py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
           >
             <span>{current.buttonText}</span>
             <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
@@ -496,7 +502,8 @@ export default function HeroSection({
               type="button"
               onClick={goToPrev}
               aria-label="Anterior"
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center transition-all hover:scale-105"
+              style={{ background: "rgba(0,0,0,0.4)" }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center transition-all hover:scale-105"
             >
               <span className="material-icons-round text-lg sm:text-xl">chevron_left</span>
             </button>
@@ -504,7 +511,8 @@ export default function HeroSection({
               type="button"
               onClick={goToNext}
               aria-label="Siguiente"
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center transition-all hover:scale-105"
+              style={{ background: "rgba(0,0,0,0.4)" }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center transition-all hover:scale-105"
             >
               <span className="material-icons-round text-lg sm:text-xl">chevron_right</span>
             </button>
@@ -516,24 +524,38 @@ export default function HeroSection({
           <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center sm:items-center lg:items-start px-2 sm:px-8 pb-5 sm:pb-8 gap-1.5 sm:gap-3 w-full">
             {current.badge && (
               <span
-                className="px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
-                style={{ ...defaultBadgeInlineStyle, ...badgeStyle }}
+                style={{
+                  background: "var(--cardBg)",
+                  color: "var(--text)",
+                  ...defaultBadgeInlineStyle,
+                  ...badgeStyle,
+                }}
+                className="px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase rounded-full shadow"
               >
                 {current.badge}
               </span>
             )}
             {current.title && (
               <h2
-                className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-none max-w-full drop-shadow-lg whitespace-nowrap text-center sm:text-center lg:text-left"
-                style={{ ...defaultTitleInlineStyle, ...titleStyle, transform: 'none' }}
+                style={{
+                  color: "var(--text)",
+                  ...defaultTitleInlineStyle,
+                  ...titleStyle,
+                  transform: 'none'
+                }}
+                className="text-xl sm:text-5xl lg:text-5xl font-extrabold leading-none max-w-full drop-shadow-lg whitespace-nowrap text-center sm:text-center lg:text-left"
               >
                 {current.title}
               </h2>
             )}
             {current.subtitle && (
               <p
-                className="w-full text-white/80 text-[9px] sm:text-sm drop-shadow text-left"
-                style={{ ...defaultSubtitleInlineStyle, ...subtitleStyle }}
+                style={{
+                  color: "var(--textSecondary)",
+                  ...defaultSubtitleInlineStyle,
+                  ...subtitleStyle
+                }}
+                className="w-full text-[9px] sm:text-sm drop-shadow text-left"
               >
                 {current.subtitle}
               </p>
@@ -541,8 +563,13 @@ export default function HeroSection({
             {current.buttonText && (
               <a
                 href={current.buttonLink || "/products-by-category"}
-                className="inline-flex items-center gap-2 mt-3 sm:mt-6 bg-white/95 hover:bg-white mx-auto text-black font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
-                style={{ ...defaultButtonInlineStyle, ...buttonTextStyle }}
+                style={{
+                  background: "var(--cardBg)",
+                  color: "var(--text)",
+                  ...defaultButtonInlineStyle,
+                  ...buttonTextStyle
+                }}
+                className="inline-flex items-center gap-2 mt-3 sm:mt-6 hover:bg-[var(--bgSecondary)] mx-auto font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
               >
                 <span>{current.buttonText}</span>
               </a>

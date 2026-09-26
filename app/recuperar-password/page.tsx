@@ -25,17 +25,22 @@ export default function RecuperarPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-slate-900 dark:text-white">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--bg)", color: "var(--text)" }}>
       <BottomBarPublic />
-      <div className="w-full max-w-md mx-auto mt-10 p-6 bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
-        <h2 className="text-2xl font-bold mb-4 text-center">Recuperar contraseña</h2>
+      <div style={{ background: "var(--cardBg)", borderColor: "var(--border)" }} className="w-full max-w-md mx-auto mt-10 p-6 rounded-2xl shadow-xl border">
+        <h2 style={{ color: "var(--text)" }} className="text-2xl font-bold mb-4 text-center">Recuperar contraseña</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <input
             type="email"
             placeholder="Correo electrónico"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+            style={{
+              borderColor: "var(--border)",
+              background: "var(--bgSecondary)",
+              color: "var(--text)"
+            }}
+            className="w-full p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-white/30"
             required
           />
           <button

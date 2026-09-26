@@ -58,15 +58,15 @@ export default function TitleSubtitleSection({
   return (
     <section
       style={{
-        ...(bg ? { backgroundColor: bg } : {}),
+        ...(bg ? { backgroundColor: bg } : { backgroundColor: "var(--bg)" }),
         ...(color ? { color } : {}),
         paddingTop,
         paddingBottom,
       }}
-      className="py-12 bg-[#F0F0F0]"
+      className="py-12"
     >
       <div
-        className="max-w-4xl mx-auto px-4 bg-[#F0F0F0]"
+        className="max-w-4xl mx-auto px-4"
         style={{ borderRadius }}
       >
         {title && (

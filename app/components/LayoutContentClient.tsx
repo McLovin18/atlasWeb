@@ -6,6 +6,8 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import ToastContainer from "./ToastContainer";
 import { useTrackPageView } from "../lib/useAnalytics";
+import { useEffect } from "react";
+import { themeManager } from "./themeManager";
 
 export default function LayoutContentClient({ children }: { children: React.ReactNode }) {
   const { showWelcomeGlobal } = useOnboarding();
@@ -13,6 +15,11 @@ export default function LayoutContentClient({ children }: { children: React.Reac
   
   // Track page views globally
   useTrackPageView();
+
+  // Initialize theme on mount
+  useEffect(() => {
+    themeManager.applyTheme(themeManager.getTheme());
+  }, []);
   
   // Si estamos en /login y showWelcomeGlobal, solo renderiza children (el modal)
   if (pathname === "/login" && showWelcomeGlobal) {

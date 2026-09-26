@@ -97,7 +97,7 @@ export default function GallerySection({
 
   return (
     <section
-      style={{ paddingTop, paddingBottom }}
+      style={{ paddingTop, paddingBottom, background: "var(--bg)" }}
       className="w-full py-3 flex flex-col items-center m-0"
     >
       {/* ── Título ── */}
@@ -181,7 +181,6 @@ export default function GallerySection({
               item={item}
               index={idx}
               titleStyle={itemTitleStyle}
-              fieldStyles={fieldStyles}
             />
           ))}
         </div>

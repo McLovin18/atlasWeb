@@ -74,7 +74,11 @@ export default function BlogsPage() {
                     trackBlogClick().catch(console.error);
                     router.push(`/blogs/${featured.id}`);
                   }}
-                  className="w-full text-left rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col md:flex-row"
+                  style={{
+                    borderColor: "var(--border)",
+                    background: "var(--cardBg)"
+                  }}
+                  className="w-full text-left rounded-2xl border overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col md:flex-row"
                 >
                   {featured.blocks?.some((b) => b.type === "image") && (
                     <div className="w-full md:w-1/3 h-48 md:h-auto flex-shrink-0">
@@ -98,9 +102,9 @@ export default function BlogsPage() {
                     </div>
                   )}
                   <div className="p-6 flex flex-col justify-center flex-1">
-                    <h3 className="text-xl font-bold mb-2">{featured.title}</h3>
+                    <h3 style={{ color: "var(--text)" }} className="text-xl font-bold mb-2">{featured.title}</h3>
                     {featured.description && (
-                      <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 line-clamp-2">
+                      <p style={{ color: "var(--textSecondary)" }} className="text-sm mb-3 line-clamp-2">
                         {featured.description}
                       </p>
                     )}
@@ -115,7 +119,7 @@ export default function BlogsPage() {
 
             {others.length > 0 && (
               <section>
-                <h2 className="text-xl font-semibold mb-4">Todos los artículos</h2>
+                <h2 style={{ color: "var(--text)" }} className="text-xl font-semibold mb-4">Todos los artículos</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {others.map((b) => {
                     const imageBlock = b.blocks?.find((block) => block.type === "image");
@@ -126,7 +130,11 @@ export default function BlogsPage() {
                           trackBlogClick().catch(console.error);
                           router.push(`/blogs/${b.id}`);
                         }}
-                        className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition"
+                        style={{
+                          borderColor: "var(--border)",
+                          background: "var(--cardBg)"
+                        }}
+                        className="rounded-2xl border overflow-hidden shadow-sm flex flex-col cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition"
                       >
                         {imageBlock && imageBlock.type === "image" && (
                           <div className="w-full h-40 overflow-hidden">
@@ -138,9 +146,9 @@ export default function BlogsPage() {
                           </div>
                         )}
                         <div className="p-4 flex flex-col flex-1">
-                          <h3 className="text-lg font-semibold mb-2">{b.title}</h3>
+                          <h3 style={{ color: "var(--text)" }} className="text-lg font-semibold mb-2">{b.title}</h3>
                           {b.description && (
-                            <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 line-clamp-3 flex-1">
+                            <p style={{ color: "var(--textSecondary)" }} className="text-sm mb-3 line-clamp-3 flex-1">
                               {b.description}
                             </p>
                           )}

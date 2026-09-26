@@ -128,16 +128,22 @@ export default function SearchResultsPage() {
   }, []);
 
   const inputClass =
-    "w-[min(75vw,300px)] sm:w-[400px] px-3 py-1.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-white/20 bg-white dark:bg-gray-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-#e8c862 transition-all";
+    "w-[min(75vw,300px)] sm:w-[400px] px-3 py-1.5 sm:py-2.5 rounded-xl border text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-#e8c862 transition-all";
+  const inputStyle = {
+    borderColor: "var(--border)",
+    background: "var(--bgSecondary)",
+    color: "var(--text)"
+  };
 
   // 🔥 FilterPanel memoizado para no perder foco
   const FilterPanel = useMemo(() => (
     <div className="space-y-3 sm:space-y-5">
       <div>
-        <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Buscar</label>
+        <label style={{ color: "var(--text)" }} className="text-xs font-semibold mb-1 sm:mb-2 block">Buscar</label>
         <input
           type="text"
           placeholder="Nombre, descripción o categoría..."
+          style={inputStyle}
           className={inputClass}
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -164,10 +170,13 @@ export default function SearchResultsPage() {
                 onClick={() => {
                    window.location.href = `/search-results?query=${encodeURIComponent(queryParam)}`;
                 }}
+                style={{
+                  background: !categoriaId ? "var(--primary)" : "var(--cardBg)",
+                  borderColor: !categoriaId ? "var(--primary)" : "var(--border)",
+                  color: !categoriaId ? "var(--primaryForeground)" : "var(--text)"
+                }}
                 className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all ${
-                  !categoriaId
-                    ? "shadow-sm scale-105 bg-black text-white border border-black"
-                    : "bg-white text-slate-900 border border-slate-300 hover:border-black/60 hover:shadow-sm"
+                  !categoriaId ? "shadow-sm scale-105" : "hover:border-[var(--primary)] hover:shadow-sm"
                 }`}
               >
                 Todas
@@ -178,10 +187,13 @@ export default function SearchResultsPage() {
                   onClick={() => {
                     window.location.href = `/search-results?query=${encodeURIComponent(queryParam)}&cat=${encodeURIComponent(cat.id)}`;
                   }}
+                  style={{
+                    background: categoriaId === cat.id ? "var(--primary)" : "var(--cardBg)",
+                    borderColor: categoriaId === cat.id ? "var(--primary)" : "var(--border)",
+                    color: categoriaId === cat.id ? "var(--primaryForeground)" : "var(--text)"
+                  }}
                   className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all ${
-                    categoriaId === cat.id
-                      ? "shadow-sm scale-105 bg-black text-white border border-black"
-                      : "bg-white text-slate-900 border border-slate-300 hover:border-black/60 hover:shadow-sm"
+                    categoriaId === cat.id ? "shadow-sm scale-105" : "hover:border-[var(--primary)] hover:shadow-sm"
                   }`}
                 >
                   {cat.icono && <span className="mr-1">🏷️</span>}
@@ -197,15 +209,14 @@ export default function SearchResultsPage() {
                 <Loading3DIcon />
               </div>
             ) : productosFiltrados.length === 0 ? (
-              <p className="text-slate-700 dark:text-white/50">No hay resultados</p>
+              <p style={{ color: "var(--textSecondary)" }}>No hay resultados</p>
             ) : (
           <>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">              {paginatedProducts.map((p: any) => (
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">
+              {paginatedProducts.map((p: any) => (
                 <ProductoCard
                   key={p.id}
                   producto={p}
-                  showCart
-                  showEye
                   isCompact={false}
                 />
               ))}
@@ -214,7 +225,8 @@ export default function SearchResultsPage() {
             {totalPages > 1 && (
               <div className="flex flex-wrap justify-center items-center gap-2 mt-8 select-none w-full">
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
@@ -223,14 +235,20 @@ export default function SearchResultsPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                   <button
                     key={n}
-                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-black border-black text-white shadow-sm' : 'bg-white border-slate-300 text-slate-900 hover:border-black/60'}`}
+                    style={{
+                      background: currentPage === n ? "var(--primary)" : "var(--cardBg)",
+                      borderColor: currentPage === n ? "var(--primary)" : "var(--border)",
+                      color: currentPage === n ? "var(--primaryForeground)" : "var(--text)"
+                    }}
+                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all hover:border-[var(--primary)]`}
                     onClick={() => setCurrentPage(n)}
                   >
                     {n}
                   </button>
                 ))}
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white border-slate-300 text-slate-900 hover:border-black/60 transition-all disabled:opacity-40"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)", color: "var(--text)" }}
+                  className="px-3 py-1.5 rounded border text-xs font-medium hover:border-[var(--primary)] transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >

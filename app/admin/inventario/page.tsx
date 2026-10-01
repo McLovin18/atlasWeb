@@ -296,7 +296,7 @@ export default function AdminInventario() {
                 if (editData) {
                   await actualizarProducto(editData.id, data);
                 } else {
-                  await crearProducto({ ...data, destacado: false });
+                  await crearProducto({ ...data, destacado: false, promocionar: false });
                 }
                 const prods = await obtenerProductos({ incluirSinStock: true });
                 setProductos(prods);
@@ -316,9 +316,10 @@ export default function AdminInventario() {
                   <table className="w-full min-w-245 table-fixed">
                     <thead className="bg-slate-50 text-slate-700 border-b">
                       <tr>
-                        <th className="text-left font-semibold px-6 py-4 w-[48%]">Producto</th>
-                        <th className="text-left font-semibold px-4 py-4 w-[24%]">Fecha actualización</th>
-                        <th className="text-center font-semibold px-4 py-4 w-[10%]">Destacado</th>
+                        <th className="text-left font-semibold px-6 py-4 w-[40%]">Producto</th>
+                        <th className="text-left font-semibold px-4 py-4 w-[20%]">Fecha actualización</th>
+                        <th className="text-center font-semibold px-4 py-4 w-[8%]">Destacado</th>
+                        <th className="text-center font-semibold px-4 py-4 w-[8%]">Promocionar</th>
                         <th className="text-right font-semibold px-4 py-4 w-[9%]">Precio</th>
                         <th className="text-right font-semibold px-6 py-4 w-[9%]">Existencias</th>
                       </tr>
@@ -373,6 +374,34 @@ export default function AdminInventario() {
                                     }
                                   }}
                                   aria-label={`Marcar ${p.nombre || "producto"} como destacado`}
+                                />
+                              </label>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <label className="inline-flex items-center justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(p.promocionar)}
+                                  className="h-5 w-5 accent-amber-600 cursor-pointer"
+                                  onChange={async (e) => {
+                                    const isChecked = e.target.checked;
+                                    setProductos((prev) =>
+                                      prev.map((item) =>
+                                        item.id === p.id ? { ...item, promocionar: isChecked } : item
+                                      )
+                                    );
+                                    try {
+                                      await actualizarProducto(p.id, { promocionar: isChecked });
+                                    } catch (error) {
+                                      console.error("Error actualizando promocionar:", error);
+                                      setProductos((prev) =>
+                                        prev.map((item) =>
+                                          item.id === p.id ? { ...item, promocionar: !isChecked } : item
+                                        )
+                                      );
+                                    }
+                                  }}
+                                  aria-label={`Marcar ${p.nombre || "producto"} como promocional`}
                                 />
                               </label>
                             </td>

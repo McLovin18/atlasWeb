@@ -14,6 +14,7 @@ export type FeaturedProductsSectionProps = {
   styles?: LandingSectionStyles;
   fieldStyles?: Record<string, LandingFieldStyle>;
   device?: "mobile" | "desktop";
+  loading?: boolean;
 };
 
 export default function FeaturedProductsSection({
@@ -22,6 +23,7 @@ export default function FeaturedProductsSection({
   styles,
   fieldStyles,
   device,
+  loading = false,
 }: FeaturedProductsSectionProps) {
   const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
   const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "0.5rem");
@@ -82,6 +84,84 @@ export default function FeaturedProductsSection({
   }, [hasCarousel, isHovered, products.length]);
 
   // ── Return condicional DESPUÉS de todos los hooks ──
+  if (loading) {
+    // Mostrar skeleton mientras carga
+    return (
+      <section
+        style={{ paddingTop, paddingBottom }}
+        className="w-full max-w-full px-2 md:px-2 flex flex-col items-center m-0 overflow-x-hidden"
+      >
+        {/* Título skeleton */}
+        {title && (
+          <div
+            className="text-3xl text-center sm:text-2xl lg:text-4xl py-2 font-extrabold tracking-tight"
+            style={{ height: "40px", width: "300px", margin: "0 auto" }}
+          >
+            <div
+              className="animate-pulse rounded"
+              style={{
+                height: "100%",
+                width: "100%",
+                background: "var(--bgSecondary)"
+              }}
+            />
+          </div>
+        )}
+
+        {/* Contenedor skeleton */}
+        <div className="w-full max-w-7xl mx-auto relative px-2 sm:px-6 md:px-12">
+          {/* Skeleton grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
+            {[1, 2, 3, 4].map((idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "var(--bgSecondary)" }}
+              >
+                <div
+                  className="animate-pulse"
+                  style={{
+                    aspectRatio: "1",
+                    background: "var(--bg)",
+                    margin: "8px",
+                    borderRadius: "16px"
+                  }}
+                />
+                <div className="p-4 space-y-3">
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "20px",
+                      width: "80%",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "16px",
+                      width: "60%",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "24px",
+                      width: "40%",
+                      background: "var(--bg)",
+                      marginTop: "12px"
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (!products.length) return null;
 
   const getVisibleProducts = () => {

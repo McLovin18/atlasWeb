@@ -28,6 +28,11 @@ type Producto = {
   descripcion: string;
   caracteristicas: string[];
   bodegaId?: string;
+  destacado?: boolean;
+  promocionar?: boolean;
+  promocionarTitulo?: string;
+  promocionarDescripcion?: string;
+  promocionarDescuento?: number;
 };
 
 type ProductoFormProps = {
@@ -72,6 +77,15 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [hoveredImageIdx, setHoveredImageIdx] = useState<number | null>(null);
   const [atributos, setAtributos] = useState<any[]>([]);
   const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>(initialData?.variationAttributeIds || []);
+  const [destacado, setDestacado] = useState<boolean>(Boolean(initialData?.destacado));
+  const [promocionar, setPromocionar] = useState<boolean>(Boolean(initialData?.promocionar));
+  const [promocionarTitulo, setPromocionarTitulo] = useState<string>(initialData?.promocionarTitulo || "");
+  const [promocionarDescripcion, setPromocionarDescripcion] = useState<string>(initialData?.promocionarDescripcion || "");
+  const [promocionarDescuento, setPromocionarDescuento] = useState<string>(
+    initialData?.promocionarDescuento !== undefined && initialData?.promocionarDescuento !== null
+      ? String(initialData.promocionarDescuento)
+      : ""
+  );
 
   function getVariantKey(attributes: Record<string, string>) {
     return Object.keys(attributes)
@@ -1125,6 +1139,88 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <input className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-400 outline-none" type="text" value="Se aplicará al precio base al comprar" readOnly />
         </label>
       </div>
+
+      {/* ── SECCIÓN DE PROMOCIÓN ──────────────────── */}
+      <div className="mt-8 rounded-2xl bg-amber-50 border border-amber-200 p-6">
+        <h4 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-2">
+          <span className="material-icons-round text-amber-600">local_offer</span>
+          Configuración de promoción
+        </h4>
+
+        <div className="space-y-4">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={destacado}
+              onChange={e => setDestacado(e.target.checked)}
+              className="h-5 w-5 rounded cursor-pointer accent-purple-600"
+            />
+            <span className="text-sm font-semibold text-slate-700">Marcar como destacado</span>
+          </label>
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={promocionar}
+              onChange={e => setPromocionar(e.target.checked)}
+              className="h-5 w-5 rounded cursor-pointer accent-amber-600"
+            />
+            <span className="text-sm font-semibold text-slate-700">Mostrar en popup promocional</span>
+          </label>
+
+          {promocionar && (
+            <div className="space-y-4 mt-4 pl-8 border-l-2 border-amber-300">
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Título promocional</span>
+                <input
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  type="text"
+                  value={promocionarTitulo}
+                  onChange={e => setPromocionarTitulo(e.target.value)}
+                  placeholder="¡OFERTA ESPECIAL!"
+                  maxLength={50}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Descripción promocional</span>
+                <textarea
+                  className="min-h-20 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  value={promocionarDescripcion}
+                  onChange={e => setPromocionarDescripcion(e.target.value)}
+                  placeholder="Aprovecha este descuento exclusivo"
+                  maxLength={150}
+                  rows={2}
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Descuento adicional para popup (%)</span>
+                <input
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={promocionarDescuento}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setPromocionarDescuento("");
+                    } else {
+                      const num = Number(val);
+                      if (!isNaN(num) && num >= 0 && num <= 100) {
+                        setPromocionarDescuento(val);
+                      }
+                    }
+                  }}
+                  placeholder="0"
+                />
+                <p className="mt-1 text-xs text-slate-500">Este descuento se suma al descuento base del producto</p>
+              </label>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 
@@ -1282,6 +1378,11 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         marca: tieneMarca ? marca : undefined,
         bodegaId,
         imagenes: imagenesFinal,
+        destacado,
+        promocionar,
+        promocionarTitulo: promocionar ? promocionarTitulo : undefined,
+        promocionarDescripcion: promocionar ? promocionarDescripcion : undefined,
+        promocionarDescuento: promocionar && promocionarDescuento !== "" ? Number(promocionarDescuento) : undefined,
         descripcion,
         caracteristicas
       });

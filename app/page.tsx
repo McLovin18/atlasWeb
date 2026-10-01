@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 
 import BottomBarPublic from "./components/BottomBarPublic";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
@@ -18,42 +18,85 @@ export default function Home() {
     featuredProducts?: string[];
   } | null>(null);
   const [featuredProductsResolved, setFeaturedProductsResolved] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingLanding, setLoadingLanding] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
+  // Cargar landing primero (rápido)
   useEffect(() => {
     let mounted = true;
 
     const loadLanding = async () => {
       try {
-        const [data, products] = await Promise.all([
-          getLandingPage(),
-          obtenerProductos(),
-        ]);
-
-        // Get all products, sort by newest first, take top 8
-        const recentProducts = (products || [])
-          .filter((p: any) => p?.id)
-          .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
-          .slice(0, 40);
+        const data = await getLandingPage();
 
         if (mounted) {
           setLanding(data);
-          setFeaturedProductsResolved(recentProducts);
+          setLoadingLanding(false);
         }
       } catch (error) {
         console.error("Error cargando landing publicada:", error);
         if (mounted) {
           setLanding(null);
-          setFeaturedProductsResolved([]);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
+          setLoadingLanding(false);
         }
       }
     };
 
     loadLanding();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Cargar productos en paralelo sin bloquear
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProducts = async () => {
+      try {
+        // Usar requestIdleCallback para cargar productos cuando el navegador esté inactivo
+        if ('requestIdleCallback' in window) {
+          (window as any).requestIdleCallback(async () => {
+            const products = await obtenerProductos({ incluirSinStock: true });
+
+            // Get all products, sort by newest first, take top 40
+            const recentProducts = (products || [])
+              .filter((p: any) => p?.id)
+              .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+              .slice(0, 40);
+
+            if (mounted) {
+              setFeaturedProductsResolved(recentProducts);
+              setLoadingProducts(false);
+            }
+          }, { timeout: 1000 });
+        } else {
+          // Fallback para navegadores que no soportan requestIdleCallback
+          setTimeout(async () => {
+            const products = await obtenerProductos({ incluirSinStock: true });
+
+            const recentProducts = (products || [])
+              .filter((p: any) => p?.id)
+              .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
+              .slice(0, 40);
+
+            if (mounted) {
+              setFeaturedProductsResolved(recentProducts);
+              setLoadingProducts(false);
+            }
+          }, 100);
+        }
+      } catch (error) {
+        console.error("Error cargando productos:", error);
+        if (mounted) {
+          setFeaturedProductsResolved([]);
+          setLoadingProducts(false);
+        }
+      }
+    };
+
+    loadProducts();
 
     return () => {
       mounted = false;
@@ -103,12 +146,25 @@ export default function Home() {
       );
 
     return landingSections.map((section) => {
+      // Si los productos aún no están cargados, mostrar skeleton o sección vacía
       if (section.type === "featuredProducts") {
+        if (loadingProducts) {
+          // Mostrar skeleton mientras carga
+          return {
+            ...section,
+            props: {
+              ...(section.props || {}),
+              products: [],
+              loading: true,
+            },
+          } as LandingSection;
+        }
         return {
           ...section,
           props: {
             ...(section.props || {}),
             products: featuredProductsResolved,
+            loading: false,
           },
         } as LandingSection;
       }
@@ -121,20 +177,21 @@ export default function Home() {
         const finalItems =
           existingItems.length > 0
             ? existingItems
-            : featuredCategoryItemsFromProducts;
+            : (loadingProducts ? [] : featuredCategoryItemsFromProducts);
 
         return {
           ...section,
           props: {
             ...(section.props || {}),
             items: finalItems,
+            loading: loadingProducts,
           },
         } as LandingSection;
       }
 
       return section;
     });
-  }, [landingSections, featuredProductsResolved]);
+  }, [landingSections, featuredProductsResolved, loadingProducts]);
 
 
     // Detecta el índice del último hero
@@ -149,7 +206,7 @@ const lastHeroIndex = useMemo(() => {
   return (
     <>
       <main className="min-h-screen w-full" style={{ background: "var(--bg)", color: "var(--text)" }}>
-        {loading ? (
+        {loadingLanding ? (
         <div
             className="w-full relative overflow-hidden"
             style={{ aspectRatio: "2400 / 1000", minHeight: "300px", background: "var(--bgSecondary)" }}
@@ -173,8 +230,8 @@ const lastHeroIndex = useMemo(() => {
         ) : renderedSections.length > 0 ? (
           <div className="flex flex-col">
             {renderedSections.map((section, index) => (
-            <SectionRenderer 
-                key={section.id} 
+            <SectionRenderer
+                key={section.id}
                 section={section}
                 isLastHero={section.type === "hero" && index === lastHeroIndex}
             />

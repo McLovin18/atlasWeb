@@ -28,6 +28,12 @@ export interface Producto {
   marca?: string;
   bodegaId?: string;
   destacado?: boolean;
+  promocionar?: boolean;
+  promocionarTitulo?: string;
+  promocionarDescripcion?: string;
+  promocionarDescuento?: number;
+  imagen?: string;
+  imagenes?: string[];
   createdAt?: number | Date;
   fechaCreacion?: any;
   [key: string]: any;

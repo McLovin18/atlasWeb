@@ -267,8 +267,8 @@ export const Navbar = () => {
   ];
 
   // Logo paths - AGREGA TUS LOGOS AQUÍ
-  const logoDark = "/logo-dark.png"; // Logo para modo oscuro
-  const logoLight = "/logo-light.png"; // Logo para modo claro
+  const logoDark = "/logo_dark.png"; // Logo para modo oscuro
+  const logoLight = "/logo_light.png"; // Logo para modo claro
   const logoSrc = theme === "light" ? logoLight : logoDark;
 
   const handleSearch = () => {
@@ -284,10 +284,10 @@ export const Navbar = () => {
     <>
       {/* ══════════════════ NAVBAR ══════════════════ */}
       <nav
-        className="sticky top-0 z-40 border-b py-3 shadow-sm backdrop-blur-md"
-        style={{ 
-          background: theme === "light" ? "rgba(255, 255, 255, 0.8)" : "#111827", 
-          borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.08)" 
+        className="sticky top-0 z-40 border-b py-4 shadow-sm backdrop-blur-md"
+        style={{
+          background: theme === "light" ? "rgba(255, 255, 255, 0.8)" : "#111827",
+          borderColor: theme === "light" ? "#e2e8f0" : "rgba(255,255,255,0.08)"
         }}
       >
         {/* ── Header principal ── */}
@@ -328,9 +328,9 @@ export const Navbar = () => {
               <Image
                 src={logoSrc}
                 alt="ATLAS"
-                width={150}
-                height={40}
-                className="h-8 w-auto"
+                width={180}
+                height={48}
+                className="h-12 w-auto"
                 priority
               />
             </a>

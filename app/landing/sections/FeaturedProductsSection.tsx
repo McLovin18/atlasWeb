@@ -15,6 +15,7 @@ export type FeaturedProductsSectionProps = {
   styles?: LandingSectionStyles;
   fieldStyles?: Record<string, LandingFieldStyle>;
   device?: "mobile" | "desktop";
+  loading?: boolean;
 };
 
 const MAX_PRODUCTS = 40;
@@ -43,6 +44,7 @@ export default function FeaturedProductsSection({
   products = [],
   styles,
   fieldStyles,
+  loading = false,
 }: FeaturedProductsSectionProps) {
   const [theme, setTheme] = React.useState("dark");
   const titleRef = React.useRef<HTMLHeadingElement>(null);
@@ -77,6 +79,87 @@ export default function FeaturedProductsSection({
   }, [products]);
 
   // ── Return condicional DESPUÉS de todos los hooks ──
+  if (loading) {
+    // Mostrar skeleton mientras carga
+    return (
+      <section
+        style={{
+          paddingTop,
+          paddingBottom,
+          background: "var(--bg)"
+        }}
+        className="w-full max-w-full px-2 md:px-2 flex flex-col items-center m-0 overflow-x-hidden"
+      >
+        {/* Título skeleton */}
+        {title && (
+          <div
+            className="section-title text-center py-2"
+            style={{ height: "40px", width: "200px", margin: "0 auto" }}
+          >
+            <div
+              className="animate-pulse rounded"
+              style={{
+                height: "100%",
+                width: "100%",
+                background: "var(--bgSecondary)"
+              }}
+            />
+          </div>
+        )}
+
+        <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 md:px-12">
+          {/* Skeleton grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 md:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "var(--bgSecondary)" }}
+              >
+                <div
+                  className="animate-pulse"
+                  style={{
+                    aspectRatio: "1",
+                    background: "var(--bg)",
+                    margin: "8px",
+                    borderRadius: "16px"
+                  }}
+                />
+                <div className="p-4 space-y-3">
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "20px",
+                      width: "80%",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "16px",
+                      width: "60%",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <div
+                    className="animate-pulse rounded"
+                    style={{
+                      height: "24px",
+                      width: "40%",
+                      background: "var(--bg)",
+                      marginTop: "12px"
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (!recentProducts.length) return null;
 
   return (

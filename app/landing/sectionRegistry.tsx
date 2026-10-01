@@ -72,6 +72,11 @@ export function SectionRenderer({
   let parsedProps = { ...props };
   const deviceForStyles = (parsedProps as any)?.device === "mobile" ? "mobile" : "desktop";
 
+  // Asegurar que el prop loading se pase si existe
+  if (props.loading !== undefined) {
+    parsedProps.loading = props.loading;
+  }
+
   const resolvedFieldStyles = Object.fromEntries(
     Object.entries(fieldStyles || {}).map(([fieldName, styleValue]) => {
       const responsiveStyle = styleValue as any;

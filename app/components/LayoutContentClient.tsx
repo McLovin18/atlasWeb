@@ -5,6 +5,7 @@ import { UserProvider } from "../context/UserContext";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import ToastContainer from "./ToastContainer";
+import PromotionalPopUpWrapper from "./PromotionalPopUpWrapper";
 import { useTrackPageView } from "../lib/useAnalytics";
 import { useEffect } from "react";
 import { themeManager } from "./themeManager";
@@ -31,6 +32,7 @@ export default function LayoutContentClient({ children }: { children: React.Reac
       <Navbar />
       {children}
       <Footer />
+      <PromotionalPopUpWrapper />
     </UserProvider>
   );
 }

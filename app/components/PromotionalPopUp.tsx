@@ -182,7 +182,7 @@ export default function PromocionalPopup({ productos, onClose }: PromocionalPopu
 
             {/* Botón de acción */}
             <a
-              href={`/product-detail/${String(currentProduct.nombre || currentProduct.id).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`}
+              href={`/product-detail?id=${currentProduct.id}`}
               className="inline-flex items-center justify-center gap-1.5 bg-black hover:bg-gray-800 text-white px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-3 rounded-lg sm:rounded-xl md:rounded-2xl font-bold text-xs sm:text-sm md:text-base transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               onClick={onClose}
             >

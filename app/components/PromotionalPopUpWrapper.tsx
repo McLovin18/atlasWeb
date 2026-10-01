@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import PromotionalPopUp from "./PromotionalPopUp";
 import { obtenerProductos } from "../lib/productos-db";
 
+const MIN_TIME_BETWEEN_POPUPS = 20 * 60 * 1000; // 20 minutos en milisegundos
+
 export default function PromotionalPopUpWrapper() {
   const [showPopup, setShowPopup] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
@@ -12,12 +14,12 @@ export default function PromotionalPopUpWrapper() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkFirstVisitOfDay = () => {
-      const today = new Date().toDateString();
-      const lastVisit = localStorage.getItem('promotionalPopupLastVisit');
+    const checkShouldShowPopup = () => {
+      const now = Date.now();
+      const lastPopupTimestamp = localStorage.getItem('promotionalPopupLastTimestamp');
 
-      if (lastVisit !== today) {
-        // Es primera visita del día, cargar productos promocionales
+      // Si nunca se ha mostrado o han pasado 20 minutos desde la última vez
+      if (!lastPopupTimestamp || (now - Number(lastPopupTimestamp)) >= MIN_TIME_BETWEEN_POPUPS) {
         loadPromotionalProducts();
       }
     };
@@ -31,7 +33,8 @@ export default function PromotionalPopUpWrapper() {
         if (promotionalProducts.length > 0) {
           setProducts(promotionalProducts);
           setShowPopup(true);
-          localStorage.setItem('promotionalPopupLastVisit', today);
+          // Guardar el timestamp actual cuando se muestra el popup
+          localStorage.setItem('promotionalPopupLastTimestamp', String(Date.now()));
         }
       } catch (error) {
         console.error("Error cargando productos promocionales:", error);
@@ -43,12 +46,12 @@ export default function PromotionalPopUpWrapper() {
     // Usar requestIdleCallback para cargar los productos cuando el navegador esté inactivo
     if ('requestIdleCallback' in window) {
       (window as any).requestIdleCallback(() => {
-        checkFirstVisitOfDay();
+        checkShouldShowPopup();
       }, { timeout: 2000 });
     } else {
       // Fallback para navegadores que no soportan requestIdleCallback
       setTimeout(() => {
-        checkFirstVisitOfDay();
+        checkShouldShowPopup();
       }, 100);
     }
   }, []);

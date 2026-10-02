@@ -22,9 +22,15 @@ const IconWhatsApp = () => (
   </svg>
 );
 
-const IconArrow = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 12h14M13 6l6 6-6 6" />
+const IconTikTok = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48.04 2.96.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.23 1.61-.24 1.46.31 2.92 1.56 3.73 2.88.31.48.56 1.01.76 1.58.08.13.19.13.28.03 1.08-1.13 2.69-1.6 4.3-1.31.64.12 1.26.34 1.85.61.15.07.32.11.49.13z"/>
+  </svg>
+);
+
+const IconFacebook = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
   </svg>
 );
 
@@ -68,36 +74,34 @@ const PayMaestro = () => (
 
 /* ---------------- Datos del negocio ---------------- */
 
-const WHATSAPP_NUMBER = "593986080164"; // solo números, con código de país, sin '+' ni espacios
-const WHATSAPP_DISPLAY = "+593 98 608 0164"; // como se muestra al usuario
+const WHATSAPP_NUMBER = "593982804800"; // solo números, con código de país, sin '+' ni espacios
+const WHATSAPP_DISPLAY = "+593 98 280 4800"; // como se muestra al usuario
 const INSTAGRAM_URL = "https://www.instagram.com/importadoratlas/";
+const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61591825107751";
+const TIKTOK_URL = "https://www.tiktok.com/@atlas.importadora";
 const DEV_INSTAGRAM_URL = "https://www.instagram.com/hector.cobena/";
 
 const socialLinks = [
   { href: INSTAGRAM_URL, label: "Instagram", Icon: IconInstagram },
-  { href: `https://wa.me/${WHATSAPP_NUMBER}`, label: "WhatsApp", Icon: IconWhatsApp },
+  { href: FACEBOOK_URL, label: "Facebook", Icon: IconFacebook },
+  { href: TIKTOK_URL, label: "TikTok", Icon: IconTikTok },
 ];
 
 const helpLinks = [
-  { href: "/como-comprar", label: "Cómo comprar" },
-  { href: "/medios-de-pago", label: "Medios de pago" },
-  { href: "/envios", label: "¿Cómo son los envíos?" },
-  { href: "/garantia", label: "Garantía y devoluciones" },
-  { href: "/contacto", label: "Contacto" },
+  { href: "/productos", label: "Catálogo de productos" },
+  { href: "/blogs", label: "Blogs" },
+  { href: "/contactanos", label: "Contacto" },
 ];
 
 const policyLinks = [
-  { href: "/politicas/envios", label: "Política de envíos" },
-  { href: "/politicas/devoluciones", label: "Política de devoluciones" },
   { href: "/politicas/privacidad", label: "Política de privacidad" },
-  { href: "/politicas/condiciones", label: "Condiciones de servicio" },
+  { href: "/politicas/terminos-y-condiciones", label: "Términos y condiciones" },
+  { href: "/politicas/politicasEnvio", label: "Política de envíos" }
 ];
-
 const Footer: React.FC = () => {
   const pathname = usePathname();
   const { trackLinkClick } = useTracking();
   const [theme, setTheme] = useState("dark");
-  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const checkTheme = () => setTheme(themeManager.getTheme());
@@ -111,12 +115,6 @@ const Footer: React.FC = () => {
   const isLight = theme === "light";
   const borderColor = isLight ? "#e2e8f0" : "rgba(255, 255, 255, 0.18)";
   const softBorder = isLight ? "#e2e8f0" : "rgba(255, 255, 255, 0.14)";
-
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: conectar a tu proveedor de newsletter (Firestore, Resend, etc.)
-    setEmail("");
-  };
 
   return (
     <>
@@ -136,32 +134,36 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Grid: newsletter / ayuda / políticas */}
+          {/* Grid: ayuda / políticas */}
           <div className={styles.ftGrid}>
             <div className={styles.ftCol}>
-              <h3 className={styles.ftColTitle} style={{ color: "var(--text)" }}>Newsletter</h3>
-              <p className={styles.ftColText} style={{ color: "var(--textSecondary)" }}>
-                Entérate antes que nadie de nuevos productos y ofertas.
-              </p>
-              <form className={styles.ftNewsletter} onSubmit={handleNewsletterSubmit}>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Correo electrónico"
-                  className={styles.ftNewsletterInput}
-                  style={{ borderColor: softBorder, color: "var(--text)" }}
-                />
-                <button
-                  type="submit"
-                  aria-label="Suscribirse"
-                  className={styles.ftNewsletterBtn}
-                  style={{ color: "var(--text)" }}
+              <h3 className={styles.ftColTitle} style={{ color: "var(--text)" }}>Contáctanos</h3>
+              <div className="flex flex-col">
+                {/* WhatsApp de contacto directo */}
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.ftWhatsappLine}
+                  style={{ color: "var(--textSecondary)" }}
+                  onClick={() => trackLinkClick().catch(console.error)}
                 >
-                  <IconArrow />
-                </button>
-              </form>
+                  <span>{WHATSAPP_DISPLAY}</span>
+                </a>
+
+                {/* Correo de contacto */}
+                <a
+                  href="mailto:importaciones.Atlas@hotmail.com"
+                  className={styles.ftWhatsappLine}
+                  style={{ color: "var(--textSecondary)" }}
+                  onClick={() => trackLinkClick().catch(console.error)}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                  <span>importaciones.Atlas@hotmail.com</span>
+                </a>
+              </div>
             </div>
 
             <div className={styles.ftCol}>
@@ -200,19 +202,6 @@ const Footer: React.FC = () => {
               </ul>
             </div>
           </div>
-
-          {/* WhatsApp de contacto directo */}
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}`}
-            target="_blank"
-            rel="noreferrer"
-            className={styles.ftWhatsappLine}
-            style={{ color: "var(--textSecondary)" }}
-            onClick={() => trackLinkClick().catch(console.error)}
-          >
-            <IconWhatsApp />
-            <span>{WHATSAPP_DISPLAY}</span>
-          </a>
 
           {/* Redes sociales centradas */}
           <ul className={styles.ftSocials}>

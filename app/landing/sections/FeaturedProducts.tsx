@@ -39,14 +39,13 @@ export default function FeaturedProductsSection({
 
   useEffect(() => {
     if (device === "mobile") {
-      // show 2 on mobile if desired elsewhere; here keep 1 for compatibility
-      setItemsPerView(1);
+      setItemsPerView(2);
       return;
     }
     const updateItemsPerView = () => {
       if (typeof window === "undefined") return;
       const width = window.innerWidth;
-      if (width < 640) setItemsPerView(1);
+      if (width < 640) setItemsPerView(2);
       else if (width < 1024) setItemsPerView(3);
       else setItemsPerView(4);
     };
@@ -84,94 +83,11 @@ export default function FeaturedProductsSection({
   }, [hasCarousel, isHovered, products.length]);
 
   // ── Return condicional DESPUÉS de todos los hooks ──
-  if (loading) {
-    // Mostrar skeleton mientras carga
-    return (
-      <section
-        style={{ paddingTop, paddingBottom }}
-        className="w-full max-w-full px-2 md:px-2 flex flex-col items-center m-0 overflow-x-hidden"
-      >
-        {/* Título skeleton */}
-        {title && (
-          <div
-            className="text-3xl text-center sm:text-2xl lg:text-4xl py-2 font-extrabold tracking-tight"
-            style={{ height: "40px", width: "300px", margin: "0 auto" }}
-          >
-            <div
-              className="animate-pulse rounded"
-              style={{
-                height: "100%",
-                width: "100%",
-                background: "var(--bgSecondary)"
-              }}
-            />
-          </div>
-        )}
-
-        {/* Contenedor skeleton */}
-        <div className="w-full max-w-7xl mx-auto relative px-2 sm:px-6 md:px-12">
-          {/* Skeleton grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-5 md:gap-6">
-            {[1, 2, 3, 4].map((idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl overflow-hidden"
-                style={{ background: "var(--bgSecondary)" }}
-              >
-                <div
-                  className="animate-pulse"
-                  style={{
-                    aspectRatio: "1",
-                    background: "var(--bg)",
-                    margin: "8px",
-                    borderRadius: "16px"
-                  }}
-                />
-                <div className="p-4 space-y-3">
-                  <div
-                    className="animate-pulse rounded"
-                    style={{
-                      height: "20px",
-                      width: "80%",
-                      background: "var(--bg)"
-                    }}
-                  />
-                  <div
-                    className="animate-pulse rounded"
-                    style={{
-                      height: "16px",
-                      width: "60%",
-                      background: "var(--bg)"
-                    }}
-                  />
-                  <div
-                    className="animate-pulse rounded"
-                    style={{
-                      height: "24px",
-                      width: "40%",
-                      background: "var(--bg)",
-                      marginTop: "12px"
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   if (!products.length) return null;
 
   const getVisibleProducts = () => {
-    const count = hasCarousel ? effectiveItemsPerView : products.length;
-    const slice: any[] = [];
-    for (let i = 0; i < count; i++) {
-      const idx = (currentIndex + i) % products.length;
-      slice.push(products[idx]);
-    }
-    return slice;
+    // Siempre mostrar todos los productos en grid, no limitar por itemsPerView
+    return products;
   };
 
   const visibleProducts = getVisibleProducts();
@@ -252,25 +168,27 @@ export default function FeaturedProductsSection({
 
           {/* Grid de productos - Full width en móvil */}
           <div
-            className={
-              isSingleVisible
-                ? "flex justify-center w-full max-w-full mx-auto"
-                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-2 md:gap-0" : "place-items-center gap-2 md:gap-6"} ${gridCols} md:auto-rows-[360px]`
-            }
+            className="grid gap-2 md:gap-6 md:grid-cols-3 lg:grid-cols-4 md:auto-rows-[360px]"
             style={{
-              minWidth: 0,
+              display: "grid",
+              width: "100%",
               animation: isAnimating
                 ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
                 : undefined,
             }}
           >
+            <style>{`
+              @media (max-width: 639px) {
+                div[style*="grid"] {
+                  grid-template-columns: repeat(2, 1fr) !important;
+                }
+              }
+            `}</style>
             {visibleProducts.map((prod: any, idx: number) => (
               <div
                 key={`${prod.id}-${currentIndex}-${idx}`}
-                className={`transition-all duration-300 flex flex-col items-stretch justify-stretch h-full ${
-                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px]"
-                }`}
-                style={{ width: "100%", minWidth: 0 }}
+                className="transition-all duration-300 flex flex-col items-stretch justify-stretch h-full"
+                style={{ width: "100%" }}
               >
                 <ProductoCard producto={prod} />
               </div>

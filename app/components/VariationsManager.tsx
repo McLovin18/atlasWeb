@@ -147,18 +147,6 @@ export default function VariationsManager({
           />
         );
       })}
-
-      {/* Mostrar stock disponible */}
-      {variationAttributeIds.every((attrId) => selectedVariations[attrId]) && (
-        <div className="pt-2 border-t border-slate-100 dark:border-white/6">
-          <p className="text-xs text-slate-600 dark:text-white/50">
-            <span className="font-semibold">Stock disponible:</span>{" "}
-            <span className={currentStock > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}>
-              {currentStock} unidades
-            </span>
-          </p>
-        </div>
-      )}
     </div>
   );
 }

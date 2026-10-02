@@ -136,6 +136,15 @@ export default function ProductDetailPage({ params }) {
     }
   }, [isLogged, user]);
 
+  const hasCaracteristicas = producto?.caracteristicas?.length > 0;
+
+  // Activar automáticamente el tab si solo hay uno disponible
+  useEffect(() => {
+    if (!hasCaracteristicas) {
+      setActiveTab("resenas");
+    }
+  }, [hasCaracteristicas]);
+
   async function fetchReviews(productId: string) {
     try {
       const res = await fetch(`/api/reviews?productId=${productId}`, { cache: 'no-store' });
@@ -347,8 +356,6 @@ export default function ProductDetailPage({ params }) {
     reviewText, setReviewText, reviewError, reviewLoading,
     handleSubmitReview, isLogged, inputStyle,
   };
-
-  const hasCaracteristicas = producto.caracteristicas?.length > 0;
 
   const handleTabToggle = (tab: "caracteristicas" | "resenas") => {
     setActiveTab((prev) => (prev === tab ? null : tab));
@@ -838,7 +845,7 @@ function ReviewsSection({
           <div>
             <div className="flex gap-0.5 mb-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} className={`text-lg ${i < Math.round(avgRating) ? "text-yellow-400" : "text-white/15"}`}>★</span>
+                <span key={i} className={`text-lg ${i < Math.round(avgRating) ? "text-yellow-400" : "dark:text-white/15 text-gray-300"}`}>★</span>
               ))}
             </div>
             <p style={{ color: "var(--textSecondary)" }} className="text-xs">
@@ -859,7 +866,7 @@ function ReviewsSection({
                 <span style={{ color: "var(--text)" }} className="text-sm font-semibold">{r.userName}</span>
                 <div className="flex gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className={`text-sm ${i < r.rating ? "text-yellow-400" : "text-white/15"}`}>★</span>
+                    <span key={i} className={`text-sm ${i < r.rating ? "text-yellow-400" : "dark:text-white/15 text-gray-300"}`}>★</span>
                   ))}
                 </div>
                 <span style={{ color: "var(--textSecondary)" }} className="text-xs ml-auto">
@@ -896,7 +903,7 @@ function ReviewsSection({
               <span key={i} onClick={() => setReviewRating(i + 1)} role="button"
                 aria-label={`Calificación ${i + 1}`}
                 className={`text-2xl cursor-pointer transition-transform hover:scale-110 select-none ${
-                  i < reviewRating ? "text-yellow-400" : "text-white/15"
+                  i < reviewRating ? "text-yellow-400" : "dark:text-white/15 text-gray-300"
                 }`}>★</span>
             ))}
           </div>
@@ -915,12 +922,7 @@ function ReviewsSection({
 
         <div className="flex items-center justify-between gap-4">
           <button type="submit" disabled={reviewLoading}
-            style={{
-              background: "var(--cardBg)",
-              borderColor: "var(--border)",
-              color: "var(--text)"
-            }}
-            className="px-6 py-2.5 rounded-xl border text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] hover:shadow-sm disabled:opacity-40 transition-all">
+            className="px-6 py-2.5 rounded-xl border text-sm font-bold dark:bg-yellow-500 dark:text-white dark:border-yellow-500 bg-yellow-400 text-black border-yellow-400 hover:shadow-sm disabled:opacity-40 transition-all">
             {reviewLoading ? "Enviando..." : "Publicar reseña"}
           </button>
         </div>

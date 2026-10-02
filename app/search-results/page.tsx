@@ -212,7 +212,7 @@ export default function SearchResultsPage() {
               <p style={{ color: "var(--textSecondary)" }}>No hay resultados</p>
             ) : (
           <>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">
               {paginatedProducts.map((p: any) => (
                 <ProductoCard
                   key={p.id}

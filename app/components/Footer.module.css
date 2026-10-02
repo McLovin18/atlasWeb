@@ -122,7 +122,7 @@
   gap: 8px;
   font-size: 0.85rem;
   text-decoration: none;
-  margin-bottom: 28px;
+  margin-bottom: 10px;
   transition: opacity 0.15s ease;
 }
 .ftWhatsappLine:hover { opacity: 0.8; }

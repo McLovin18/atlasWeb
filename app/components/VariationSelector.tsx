@@ -42,11 +42,11 @@ export default function VariationSelector({
             disabled={disabled}
             className={`
               px-4 py-2 rounded-lg font-medium text-sm transition-all
-              border whitespace-nowrap bg-white text-slate-900
+              border whitespace-nowrap
               ${
                 selectedValue === option
-                  ? "border-black bg-white text-black shadow-sm"
-                  : "border-slate-300 text-slate-900 hover:border-black/60 hover:shadow-sm"
+                  ? "dark:bg-yellow-500 dark:text-white dark:border-yellow-500 bg-yellow-400 text-black border-yellow-400 shadow-sm"
+                  : "bg-white border-slate-300 text-slate-900 hover:border-black/60 hover:shadow-sm"
               }
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
             `}

@@ -221,7 +221,7 @@ export default function ProductosPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 animate-in fade-in duration-700">
               {paginatedProducts.map((p: any, index: number) => (
                 <ProductoCard
                   key={p.id}

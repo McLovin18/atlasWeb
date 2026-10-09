@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crearOrdenAdmin } from "../../../lib/ordenes-db";
+import { crearOrdenAdmin } from "../../../lib/ordenes-db-admin";
 import { buildOrderProductLine, cleanUndefined } from "../../../lib/order-checkout-utils";
 import { preCheckIdempotentOrder, completeIdempotentOrder, failIdempotentOrder, cleanupExpiredLocks } from "../../../lib/idempotent-order-db";
 import admin from "../../../lib/firebase-admin";

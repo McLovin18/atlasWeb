@@ -17,7 +17,7 @@ export async function crearOrdenAdmin(orden: any) {
     tx.set(metaRef, { lastNumber: next }, { merge: true });
     return next;
   });
-  const orderId = `ord-${String(counterDoc).padStart(5, "0")}`;
+  const orderId = `ID-${String(counterDoc).padStart(6, "0")}`;
   console.log("[crearOrdenAdmin] orderId generado:", orderId);
 
   const productosOrigen = Array.isArray(orden.productos) ? orden.productos : [];

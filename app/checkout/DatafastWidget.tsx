@@ -22,7 +22,7 @@ interface DatafastWidgetProps {
 
 const DATAFAST_SCRIPT_BASE =
   process.env.NEXT_PUBLIC_DATAFAST_SCRIPT_URL ||
-  "https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=";
+  "https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=";
 
 // Tipos de pago a mostrar en el widget (VISA, MASTER, AMEX, etc.)
 const PAYMENT_BRANDS = "VISA MASTER DINERS AMEX";
@@ -54,6 +54,10 @@ export default function DatafastWidget({ checkoutId, pedidoId }: DatafastWidgetP
           console.log("Datafast form found:", !!datafastForm);
 
           if (datafastForm) {
+            console.log("Form action:", datafastForm.action);
+            console.log("Form method:", datafastForm.method);
+            console.log("Form target:", datafastForm.target);
+
             const button = datafastForm.querySelector('.wpwl-button');
             console.log("Payment button found:", !!button);
 
@@ -68,6 +72,7 @@ export default function DatafastWidget({ checkoutId, pedidoId }: DatafastWidgetP
               console.log("=== FORM SUBMIT ===");
               console.log("Form action:", datafastForm.action);
               console.log("Form method:", datafastForm.method);
+              console.log("Form target:", datafastForm.target);
             });
           }
         }, 1000);
@@ -84,6 +89,30 @@ export default function DatafastWidget({ checkoutId, pedidoId }: DatafastWidgetP
       document.body.removeChild(scriptRef.current);
       scriptRef.current = null;
     }
+
+    // Limpiar formulario anterior si existiera
+    const existingForm = document.getElementById('datafast-payment-form');
+    if (existingForm) {
+      existingForm.remove();
+    }
+
+    // Inyectar el formulario en el body del documento (según ejemplo de GitHub)
+    const form = document.createElement('form');
+    form.id = 'datafast-payment-form';
+    form.action = shopperResultUrl;
+    form.className = 'paymentWidgets';
+    form.setAttribute('data-brands', PAYMENT_BRANDS);
+
+    // Agregar campo oculto shopperResultUrl
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'shopperResultUrl';
+    hiddenInput.value = shopperResultUrl;
+    form.appendChild(hiddenInput);
+
+    document.body.appendChild(form);
+
+    console.log("[DatafastWidget] Formulario inyectado en body del documento");
 
     const script = document.createElement("script");
     script.src = `${DATAFAST_SCRIPT_BASE}${checkoutId}`;
@@ -106,6 +135,10 @@ export default function DatafastWidget({ checkoutId, pedidoId }: DatafastWidgetP
         document.body.removeChild(scriptRef.current);
         scriptRef.current = null;
       }
+      const formToRemove = document.getElementById('datafast-payment-form');
+      if (formToRemove) {
+        formToRemove.remove();
+      }
     };
   }, [checkoutId]);
 
@@ -127,20 +160,19 @@ export default function DatafastWidget({ checkoutId, pedidoId }: DatafastWidgetP
 
       {/*
         Datafast busca este div con el atributo data-brands para inyectar el form.
-        shopperResultUrl es la URL a donde redirige Datafast al finalizar.
-        Según la documentación oficial, el formulario debe tener action={shopperResultUrl}
+        Según la documentación oficial, el action debe ser la shopperResultUrl.
+        Datafast intercepta el envío del formulario y lo procesa automáticamente.
+        Usamos dangerouslySetInnerHTML para asegurar que el formulario se renderice correctamente.
+        Agregamos el campo oculto shopperResultUrl para asegurar que Datafast lo reciba.
       */}
       <div
         ref={containerRef}
         id="payment-form"
         className="payment-form-container"
-      >
-        <form
-          action={shopperResultUrl}
-          className="paymentWidgets"
-          data-brands={PAYMENT_BRANDS}
-        />
-      </div>
+        dangerouslySetInnerHTML={{
+          __html: `<form action="${shopperResultUrl}" class="paymentWidgets" data-brands="${PAYMENT_BRANDS}"><input type="hidden" name="shopperResultUrl" value="${shopperResultUrl}" /></form>`,
+        }}
+      />
 
       <p className="widget-disclaimer">
         Tus datos de pago son procesados de forma segura por Datafast.

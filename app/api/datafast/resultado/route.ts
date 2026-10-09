@@ -326,6 +326,11 @@ export async function GET(req: NextRequest) {
     const pedidoId = searchParams.get("pedidoId");
     const resourcePath = searchParams.get("resourcePath");
 
+    console.log("[Datafast Result] Todos los parámetros recibidos:");
+    searchParams.forEach((value, key) => {
+      console.log(`  ${key}: ${value}`);
+    });
+
     if (!pedidoId) {
       return NextResponse.json(
         { error: "Falta pedidoId" },
@@ -389,14 +394,10 @@ export async function GET(req: NextRequest) {
         // Enviar correos de confirmación
         await enviarCorresPagoExitoso(orden);
 
-        // TEMPORAL: Devolver JSON en lugar de redirigir para depuración
-        return NextResponse.json({
-          success: true,
-          message: "Pago exitoso",
-          paymentStatus,
-          paymentId: paymentData.id,
-          pedidoId,
-        });
+        // Redirigir a página de éxito
+        return NextResponse.redirect(
+          new URL(`/checkout/exito?pedidoId=${pedidoId}`, req.url)
+        );
       } else if (
         paymentStatus === "000.100.112" ||
         paymentStatus === "000.100.113" ||
@@ -416,13 +417,10 @@ export async function GET(req: NextRequest) {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        // TEMPORAL: Devolver JSON en lugar de redirigir para depuración
-        return NextResponse.json({
-          success: false,
-          message: "Pago pendiente",
-          paymentStatus,
-          pedidoId,
-        });
+        // Redirigir a página de pendiente
+        return NextResponse.redirect(
+          new URL(`/checkout/pendiente?pedidoId=${pedidoId}`, req.url)
+        );
       } else {
         // Pago fallido
         console.log("❌❌❌ PAGO FALLIDO ❌❌❌");
@@ -438,13 +436,10 @@ export async function GET(req: NextRequest) {
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        // TEMPORAL: Devolver JSON en lugar de redirigir para depuración
-        return NextResponse.json({
-          success: false,
-          message: "Pago fallido",
-          paymentStatus,
-          pedidoId,
-        });
+        // Redirigir a página de error
+        return NextResponse.redirect(
+          new URL(`/checkout/failed?pedidoId=${pedidoId}`, req.url)
+        );
       }
     }
 

@@ -61,7 +61,10 @@ async function createDatafastCheckout(
   orderId: string,
   amount: number,
   customerEmail: string,
-  customerName: string
+  customerName: string,
+  pedidoId?: string,
+  direccion?: any,
+  cliente?: any
 ): Promise<{ checkoutId: string }> {
   console.log("[Datafast] Configuración:", {
     baseUrl: DATAFAST_BASE_URL,
@@ -91,7 +94,6 @@ async function createDatafastCheckout(
     amount: amount.toFixed(2),
     currency: DATAFAST_CURRENCY,
     paymentType: "DB",
-    "paymentBrand": "VISA",
     merchantTransactionId: orderId,
     customer: {
       email: customerEmail,
@@ -99,28 +101,39 @@ async function createDatafastCheckout(
       surname: customerName.split(" ").slice(1).join(" ") || "",
     },
     billing: {
-      street1: "N/A",
-      city: "N/A",
-      state: "N/A",
+      street1: direccion?.direccion || "N/A",
+      city: direccion?.ciudad || "N/A",
+      state: direccion?.provincia || "N/A",
       country: "EC",
-      postcode: "000000",
     },
-    customParameters: {
-      MID: DATAFAST_MID,
-      TID: DATAFAST_TID,
-    },
-    shopperResultUrl: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/datafast/resultado`,
   };
 
   console.log("[Datafast] Payload:", JSON.stringify(payload, null, 2));
+
+  // Convertir payload a formato URL-encoded según documentación de Datafast
+  // Usar notación de puntos para objetos anidados
+  const formData = new URLSearchParams();
+  const flattenObject = (obj: any, prefix: string = '') => {
+    Object.entries(obj).forEach(([key, value]) => {
+      const newKey = prefix ? `${prefix}.${key}` : key;
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        flattenObject(value, newKey);
+      } else {
+        formData.append(newKey, String(value));
+      }
+    });
+  };
+  flattenObject(payload);
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: useBearer ? `Bearer ${auth}` : `Basic ${auth}`,
-      "Content-Type": "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "X-MID": DATAFAST_MID || "",
+      "X-TID": DATAFAST_TID || "",
     },
-    body: JSON.stringify(payload),
+    body: formData.toString(),
   });
 
   const data = await response.json();
@@ -194,7 +207,7 @@ export async function POST(req: NextRequest) {
       preCheck = { canProceed: true, lockId: `order_lock_${idempotencyKey}` };
     }
 
-    if (!preCheck.canProceed) {
+    if (!preCheck.canProceed && !body.forceRetry) {
       console.log("[iniciar-pago] Idempotencia: No puede proceder", preCheck);
       if (preCheck.existingOrderId) {
         console.log("[iniciar-pago] Idempotencia: Orden existente encontrada", preCheck.existingOrderId);
@@ -213,11 +226,16 @@ export async function POST(req: NextRequest) {
           if (minutesSinceCreation > 25 || !orden.checkoutId) {
             // Checkout expirado o no existe, crear uno nuevo
             console.log("[iniciar-pago] Checkout expirado, creando nuevo...");
+            console.log("[iniciar-pago] Direccion:", body.direccion);
+            console.log("[iniciar-pago] Cliente:", body.cliente);
             const { checkoutId: newCheckoutId } = await createDatafastCheckout(
               orden.orderId,
               orden.total || body.total,
               body.cliente.email,
-              body.cliente.nombre
+              body.cliente.nombre,
+              preCheck.existingOrderId,
+              body.direccion,
+              body.cliente
             );
             console.log("[iniciar-pago] Nuevo checkoutId creado:", newCheckoutId);
 
@@ -347,7 +365,10 @@ export async function POST(req: NextRequest) {
       orden.orderId,
       totalCalculado,
       body.cliente.email,
-      body.cliente.nombre
+      body.cliente.nombre,
+      orden.id,
+      body.direccion,
+      body.cliente
     );
     console.log("[iniciar-pago] CheckoutId creado:", checkoutId);
 

@@ -162,6 +162,26 @@ export default function CartPage() {
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   };
 
+  const handlePagarConTarjeta = () => {
+    setError("");
+
+    if (carrito.length === 0) {
+      setError("El carrito está vacío");
+      return;
+    }
+
+    for (const p of carrito) {
+      const availableStock = resolveAvailableStock(p);
+      if (p.cantidad > availableStock) {
+        setError(`Solo hay ${availableStock} unidades disponibles de "${p.nombre}".`);
+        return;
+      }
+    }
+
+    // Redirigir al checkout
+    window.location.href = "/checkout";
+  };
+
   const handleCantidad = (id: string, cantidad: number) => {
     if (cantidad < 1) return;
     const prod = carrito.find((p) => resolveCartItemKey(p) === id);
@@ -375,7 +395,15 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handlePagarConTarjeta}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-[#dcb432] hover:bg-[#c9a32d] text-black font-extrabold text-sm rounded-xl transition-colors shadow-md"
+                      title="Pagar con tarjeta de crédito/débito"
+                    >
+                      <span className="material-icons-round text-base">credit_card</span>
+                      Pagar con tarjeta
+                    </button>
                     <button
                       onClick={handleGenerarOrden}
                       className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-[var(--primary)] hover:bg-[var(--primaryHover)] text-[var(--primaryForeground)] font-extrabold text-sm rounded-xl transition-colors shadow-md"

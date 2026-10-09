@@ -64,7 +64,7 @@ export async function preCheckIdempotentOrder(
         email: request.email,
         status: "processing",
         createdAt: admin.firestore.Timestamp.now(),
-        expiresAt: new Date(Date.now() + 5 * 60000), // Expira en 5 min
+        expiresAt: new Date(Date.now() + 30 * 1000), // Expira en 30 segundos
       } as IdempotentOrderRecord);
       
       // ✅ Lock creado exitosamente, podemos proceder
@@ -118,16 +118,6 @@ export async function preCheckIdempotentOrder(
       canProceed: false,
       lockId,
       error: `Idempotency check failed: ${err.message}`,
-    };
-  }
-    }
-
-    // Otro error
-    console.error("[idempotent-order] Unexpected error:", err);
-    return {
-      canProceed: false,
-      lockId,
-      error: err.message,
     };
   }
 }

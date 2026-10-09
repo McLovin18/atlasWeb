@@ -92,6 +92,11 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "geolocation=(), microphone=(), camera=()",
           },
+          // Content Security Policy para permitir Datafast, Firebase y Google Analytics
+          {
+            key: "Content-Security-Policy",
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* blob:; worker-src 'self' blob:; frame-src 'self' https://eu-test.oppwa.com https://test.oppwa.com; connect-src 'self' https://eu-test.oppwa.com https://test.oppwa.com https://firestore.googleapis.com https://www.google-analytics.com https://www.google.com;",
+          },
           // Cache headers para mejor rendimiento
           {
             key: "Cache-Control",

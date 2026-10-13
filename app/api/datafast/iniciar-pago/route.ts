@@ -45,6 +45,33 @@ interface IniciarPagoRequest {
   total: number;
 }
 
+// ── Helper: Extraer IP real del cliente ───────────────────────────────────────────
+
+function getClientIp(req: NextRequest): string {
+  // x-forwarded-for puede tener múltiples IPs: "client, proxy1, proxy2"
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const ips = forwardedFor.split(",").map(ip => ip.trim());
+    const firstIp = ips[0];
+    // Convertir IPv6-mapped IPv4 a IPv4 (ej: ::ffff:127.0.0.1 -> 127.0.0.1)
+    if (firstIp.startsWith("::ffff:")) {
+      return firstIp.substring(7);
+    }
+    return firstIp;
+  }
+
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) {
+    if (realIp.startsWith("::ffff:")) {
+      return realIp.substring(7);
+    }
+    return realIp;
+  }
+
+  // Fallback para desarrollo (en producción esto no debería ocurrir)
+  return "127.0.0.1";
+}
+
 // ── Helper: Generar idempotency key ─────────────────────────────────────────────
 
 function generateIdempotencyKey(email: string, items: any[]): string {
@@ -64,7 +91,8 @@ async function createDatafastCheckout(
   customerName: string,
   pedidoId?: string,
   direccion?: any,
-  cliente?: any
+  cliente?: any,
+  customerIp?: string
 ): Promise<{ checkoutId: string }> {
   console.log("[Datafast] Configuración:", {
     baseUrl: DATAFAST_BASE_URL,
@@ -90,32 +118,95 @@ async function createDatafastCheckout(
 
   console.log("[Datafast] Auth header:", useBearer ? `Bearer ${auth.substring(0, 10)}...` : `Basic ${auth.substring(0, 10)}...`);
 
+  // Fase 2 de pruebas: payload completo según documentación Datafast
+  // Preparar identificación según documentación de Datafast
+  // Enviar identificación completa sin truncar
+  const identificacion = cliente?.identificacion || "";
+  const docId = identificacion;
+
+  // Generar merchantCustomerId (ID único del usuario, usar email como base)
+  const merchantCustomerId = cliente?.email?.replace(/[^a-zA-Z0-9]/g, "").substring(0, 16) || "0000000000000001";
+
+  // Calcular impuestos (IVA 12%)
+  const baseImponible = amount / 1.12;
+  const iva = amount - baseImponible;
+  const base0 = 0; // Si no hay productos base 0
+
+  // Preparar items del carrito según documentación
+  const cartItems = cliente?.productos || [];
+  const itemsPayload = cartItems.map((item: any, index: number) => ({
+    [`cart.items[${index}].name`]: item.nombre || "Producto",
+    [`cart.items[${index}].description`]: item.descripcion || item.nombre || "Producto",
+    [`cart.items[${index}].price`]: item.precio ? item.precio.toFixed(2) : "0.00",
+    [`cart.items[${index}].quantity`]: item.cantidad || 1,
+  })).reduce((acc, item) => ({ ...acc, ...item }), {});
+
+  // URL donde Datafast enviará el resultado del pago (callback)
+  const shopperResultUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/datafast/resultado`;
+
   const payload = {
     amount: amount.toFixed(2),
     currency: DATAFAST_CURRENCY,
     paymentType: "DB",
     merchantTransactionId: orderId,
+    testMode: "EXTERNAL", // Requerido en Fase 2
+    shopperResultUrl: shopperResultUrl, // URL para recibir el callback de Datafast
     customer: {
       email: customerEmail,
       givenName: customerName.split(" ")[0] || customerName,
+      middleName: cliente?.segundoNombre || "", // Segundo nombre (opcional)
       surname: customerName.split(" ").slice(1).join(" ") || "",
+      identificationDocType: "IDCARD", // Valor fijo según documentación
+      identificationDocId: docId,
+      ip: customerIp,
+      merchantCustomerId: merchantCustomerId,
+      phone: cliente?.telefono || "",
     },
     billing: {
       street1: direccion?.direccion || "N/A",
       city: direccion?.ciudad || "N/A",
       state: direccion?.provincia || "N/A",
-      country: "EC",
+      country: direccion?.pais || "EC",
+    },
+    shipping: {
+      street1: direccion?.direccion || "N/A",
+      country: direccion?.pais || "EC",
+    },
+    ...itemsPayload,
+    customParameters: {
+      // Datos de impuestos
+      SHOPPER_VAL_BASE0: base0.toFixed(2),
+      SHOPPER_VAL_BASEIMP: baseImponible.toFixed(2),
+      SHOPPER_VAL_IVA: iva.toFixed(2),
+      // Datos del comercio (MID / TID)
+      SHOPPER_MID: DATAFAST_MID,
+      SHOPPER_TID: DATAFAST_TID,
+      // Datos de identificación
+      SHOPPER_ECI: "0103910",
+      SHOPPER_PSERV: "17913101",
+      // Versión
+      SHOPPER_VERSIONDF: "2",
+    },
+    risk: {
+      parameters: {
+        USER_DATA2: "ImportadoraAtlas", // Nombre del comercio
+      },
     },
   };
 
   console.log("[Datafast] Payload:", JSON.stringify(payload, null, 2));
 
   // Convertir payload a formato URL-encoded según documentación de Datafast
-  // Usar notación de puntos para objetos anidados
+  // Usar notación de corchetes para customParameters y risk.parameters
   const formData = new URLSearchParams();
   const flattenObject = (obj: any, prefix: string = '') => {
     Object.entries(obj).forEach(([key, value]) => {
-      const newKey = prefix ? `${prefix}.${key}` : key;
+      // Usar corchetes para customParameters y risk.parameters según documentación Datafast
+      const useBracketNotation = prefix === 'customParameters' || prefix === 'risk.parameters';
+      const newKey = prefix 
+        ? (useBracketNotation ? `${prefix}[${key}]` : `${prefix}.${key}`) 
+        : key;
+      
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         flattenObject(value, newKey);
       } else {
@@ -124,6 +215,8 @@ async function createDatafastCheckout(
     });
   };
   flattenObject(payload);
+
+  console.log("[Datafast] URL-encoded Body:", formData.toString());
 
   const response = await fetch(url, {
     method: "POST",
@@ -218,14 +311,18 @@ export async function POST(req: NextRequest) {
           const orden = ordenSnap.data();
           console.log("[iniciar-pago] Idempotencia: Orden existente con checkoutId", orden.checkoutId);
 
-          // Verificar si el checkoutId es válido (no expirado)
+          // Verificar si el checkoutId es válido (no expirado y pago no falló)
           // Datafast expira los checkoutIds después de 30 minutos
           const ordenCreatedAt = orden.createdAt?.toDate?.() || new Date(orden.createdAt);
           const minutesSinceCreation = (Date.now() - ordenCreatedAt.getTime()) / (1000 * 60);
+          const estadoInvalido = ["fallido", "rechazado", "cancelado", "rechazada"].includes(orden.estado);
 
-          if (minutesSinceCreation > 25 || !orden.checkoutId) {
-            // Checkout expirado o no existe, crear uno nuevo
-            console.log("[iniciar-pago] Checkout expirado, creando nuevo...");
+          if (minutesSinceCreation > 25 || !orden.checkoutId || estadoInvalido) {
+            // Checkout expirado, no existe, o pago falló, crear uno nuevo
+            const motivo = !orden.checkoutId ? "sin checkoutId" :
+                          estadoInvalido ? `estado inválido: ${orden.estado}` :
+                          "checkout expirado";
+            console.log(`[iniciar-pago] Renovando checkout (${motivo})...`);
             console.log("[iniciar-pago] Direccion:", body.direccion);
             console.log("[iniciar-pago] Cliente:", body.cliente);
             const { checkoutId: newCheckoutId } = await createDatafastCheckout(
@@ -235,7 +332,8 @@ export async function POST(req: NextRequest) {
               body.cliente.nombre,
               preCheck.existingOrderId,
               body.direccion,
-              body.cliente
+              body.cliente,
+              getClientIp(req)
             );
             console.log("[iniciar-pago] Nuevo checkoutId creado:", newCheckoutId);
 
@@ -368,7 +466,8 @@ export async function POST(req: NextRequest) {
       body.cliente.nombre,
       orden.id,
       body.direccion,
-      body.cliente
+      body.cliente,
+      getClientIp(req)
     );
     console.log("[iniciar-pago] CheckoutId creado:", checkoutId);
 

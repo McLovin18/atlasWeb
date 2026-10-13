@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useUser } from "../context/UserContext";
 import { getSnapshotPricing } from "../lib/pricing";
 import CheckoutForm from "./Checkoutform";
 import Link from "next/link";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { carrito, loading: contextLoading, cartReady } = useUser();
+  const searchParams = useSearchParams();
+  
+  // Detectar parámetros de error de Datafast
+  const paymentError = (searchParams.get("paymentError") || "").slice(0, 300);
+  const paymentErrorId = searchParams.get("paymentErrorId") || "";
+  const retryPedidoId = searchParams.get("pedidoId") || "";
 
   const items = Array.isArray(carrito) ? carrito : [];
   const subtotal = items.reduce((sum, item: any) => {
@@ -44,8 +51,8 @@ export default function CheckoutPage() {
             Volver al carrito
           </Link>
           <div className="logo-checkout">
-            <span className="logo-text">MARCA</span>
-            <span className="logo-accent">ESTILO</span>
+            <span className="logo-text">IMPORTADORA</span>
+            <span className="logo-accent">ATLAS</span>
           </div>
         </div>
         
@@ -120,12 +127,20 @@ export default function CheckoutPage() {
           Volver al carrito
         </Link>
         <div className="logo-checkout">
-          <span className="logo-text">MARCA</span>
-          <span className="logo-accent">ESTILO</span>
+          <span className="logo-text">IMPORTADORA</span>
+          <span className="text-4xl text-bold"> ATLAS</span>
         </div>
       </div>
 
-      <CheckoutForm items={items} subtotal={subtotal} costoEnvio={costoEnvio} total={total} />
+      <CheckoutForm 
+        items={items} 
+        subtotal={subtotal} 
+        costoEnvio={costoEnvio} 
+        total={total}
+        paymentError={paymentError}
+        paymentErrorId={paymentErrorId}
+        retryPedidoId={retryPedidoId}
+      />
 
       <style jsx>{`
         .checkout-page {
@@ -178,5 +193,20 @@ export default function CheckoutPage() {
         }
       `}</style>
     </main>
+  );
+}
+
+// useSearchParams requiere un límite <Suspense> en el App Router
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#080808] flex items-center justify-center">
+          <div className="animate-pulse text-white text-xl">Cargando...</div>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

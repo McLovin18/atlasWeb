@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DatafastWidget from "./DatafastWidget";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -25,6 +25,12 @@ interface CheckoutFormProps {
   subtotal: number;
   costoEnvio: number;
   total: number;
+  /** Mensaje de error de un pago rechazado (viene de ?paymentError=...) */
+  paymentError?: string;
+  /** ID del error de pago de Datafast (viene de ?paymentErrorId=...) */
+  paymentErrorId?: string;
+  /** Id de la orden a reintentar (viene de ?pedidoId=...) */
+  retryPedidoId?: string;
 }
 
 interface DatosCliente {
@@ -50,7 +56,15 @@ const PROVINCIAS = [
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export default function CheckoutForm({ items, subtotal, costoEnvio, total }: CheckoutFormProps) {
+export default function CheckoutForm({ 
+  items, 
+  subtotal, 
+  costoEnvio, 
+  total, 
+  paymentError = "", 
+  paymentErrorId = "", 
+  retryPedidoId = "" 
+}: CheckoutFormProps) {
   const [paso, setPaso] = useState<1 | 2 | 3>(1);
   const [pedidoId, setPedidoId] = useState<string>("");
   const [pedidoDocId, setPedidoDocId] = useState<string>("");
@@ -61,6 +75,21 @@ export default function CheckoutForm({ items, subtotal, costoEnvio, total }: Che
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [shippingPolicyAccepted, setShippingPolicyAccepted] = useState(false);
   const [forceRetry, setForceRetry] = useState(false);
+
+  // Limpiar parámetros de error de la URL después de leerlos
+  useEffect(() => {
+    if (paymentError || paymentErrorId) {
+      // Limpiar la URL removiendo los parámetros de error
+      const url = new URL(window.location.href);
+      url.searchParams.delete("paymentError");
+      url.searchParams.delete("paymentErrorId");
+      url.searchParams.delete("retry");
+      window.history.replaceState({}, "", url.toString());
+      
+      // Mostrar el error en el estado local
+      setCheckoutError(decodeURIComponent(paymentError));
+    }
+  }, [paymentError, paymentErrorId]);
 
   const [datos, setDatos] = useState<DatosCliente>({
     nombre: "",

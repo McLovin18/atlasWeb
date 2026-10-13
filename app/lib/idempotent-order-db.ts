@@ -81,14 +81,34 @@ export async function preCheckIdempotentOrder(
         if (existingLock.exists) {
           const existingData = existingLock.data() as IdempotentOrderRecord;
           
-          // Si está completada, devolver orden existente
+          // Si está completada, verificar si expiró el tiempo de bloqueo (10 minutos)
           if (existingData.status === "completed" && existingData.orderId) {
-            return {
-              canProceed: false,
-              existingOrderId: existingData.orderId,
-              lockId,
-              error: "Order already exists",
-            };
+            const createdAt = existingData.createdAt;
+            // Manejar tanto Date nativo como Timestamp de Firebase
+            const createdAtDate = createdAt instanceof Date
+              ? createdAt
+              : createdAt?.toDate?.() || new Date(createdAt);
+            const now = new Date();
+            const minutesSinceCreation = (now.getTime() - createdAtDate.getTime()) / (1000 * 60);
+            const BLOCK_DURATION_MINUTES = 10; // Bloquear solo por 10 minutos
+
+            if (minutesSinceCreation < BLOCK_DURATION_MINUTES) {
+              // Todavía en periodo de bloqueo
+              return {
+                canProceed: false,
+                existingOrderId: existingData.orderId,
+                lockId,
+                error: "Order already exists",
+              };
+            } else {
+              // Bloqueo expiró, borrar el lock y permitir nueva orden
+              await lockRef.delete();
+              console.log(`[idempotent-order] Lock expired after ${minutesSinceCreation.toFixed(1)} minutes, allowing new order`);
+              return {
+                canProceed: true,
+                lockId,
+              };
+            }
           }
           
           // Si falló, dejar que reintente (borrar lock viejo es job del cleanup)
@@ -135,7 +155,23 @@ export async function completeIdempotentOrder(
   const db = admin.firestore();
 
   try {
-    await db.collection("order_creation_locks").doc(lockId).update({
+    const lockRef = db.collection("order_creation_locks").doc(lockId);
+    const lockSnap = await lockRef.get();
+
+    // Si el lock no existe (expiró o fue borrado), crear uno nuevo como completado
+    if (!lockSnap.exists) {
+      console.log("[idempotent-order] Lock not found, creating completed lock");
+      await lockRef.set({
+        status: "completed",
+        orderId,
+        completedAt: admin.firestore.Timestamp.now(),
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+      return { success: true };
+    }
+
+    // Si existe, actualizarlo
+    await lockRef.update({
       status: "completed",
       orderId,
       completedAt: admin.firestore.Timestamp.now(),

@@ -14,7 +14,11 @@ import { trackPageView, trackClick } from "../lib/analytics-db";
 export function useTrackPageView() {
   useEffect(() => {
     // Track page view when component mounts
-    trackPageView().catch(console.error);
+    // Don't await - let it fail silently if there are issues
+    trackPageView().catch((err) => {
+      // Silently ignore analytics errors - they should never break the app
+      console.warn("[Analytics] Page view tracking failed (non-critical):", err);
+    });
   }, []);
 }
 

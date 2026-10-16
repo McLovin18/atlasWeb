@@ -8,9 +8,14 @@ import { app } from "./firebase";
  * @returns URL pública de la imagen
  */
 export async function uploadImageAndGetUrl(file: File, path: string): Promise<string> {
-  const storage = getStorage(app);
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(storageRef);
-  return url;
+  try {
+    const storage = getStorage(app);
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    return url;
+  } catch (error) {
+    console.error("[Upload Image] Error uploading to Firebase Storage:", error);
+    throw new Error(`Error subiendo imagen a Firebase Storage: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

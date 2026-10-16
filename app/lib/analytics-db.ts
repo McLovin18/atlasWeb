@@ -61,11 +61,13 @@ export async function trackPageView(): Promise<void> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[Analytics] API returned non-ok status:", response.status);
-      console.error("[Analytics] API response:", errorText);
+      // Only log first 200 chars of error to avoid console spam
+      console.error("[Analytics] API response:", errorText.substring(0, 200));
     } else {
       console.log("[Analytics] Page view tracked successfully");
     }
   } catch (error) {
+    // Silently fail - analytics should never break the app
     console.error("[Analytics] Error tracking page view:", error);
   }
 }

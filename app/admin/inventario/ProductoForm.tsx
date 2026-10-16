@@ -58,7 +58,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [descuento, setDescuento] = useState<string>(
     initialData?.descuento !== undefined && initialData?.descuento !== null
       ? String(initialData.descuento)
-      : ""
+      : "0"
   );
   const [categoria, setCategoria] = useState<string>(initialData?.categoria || "");
   const [subcategoria, setSubcategoria] = useState<string>(initialData?.subcategoria || "");
@@ -84,7 +84,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [promocionarDescuento, setPromocionarDescuento] = useState<string>(
     initialData?.promocionarDescuento !== undefined && initialData?.promocionarDescuento !== null
       ? String(initialData.promocionarDescuento)
-      : ""
+      : "0"
   );
 
   function getVariantKey(attributes: Record<string, string>) {
@@ -1331,6 +1331,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           // Si es URL (http/https), dejarla igual
           if (img.startsWith("http")) return img;
           // Si es blob, ignorar (no debería ocurrir)
+          console.warn(`[ProductoForm] Ignorando imagen inválida en índice ${idx}:`, img);
           return null;
         } else if (img instanceof File) {
           // Subir archivo a Storage
@@ -1338,9 +1339,12 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_${Date.now()}_${idx}.${ext}`;
           const path = `productos/${nombreArchivo}`;
           try {
+            console.log(`[ProductoForm] Subiendo imagen ${idx}: ${nombreArchivo}`);
             const url = await uploadImageAndGetUrl(img, path);
+            console.log(`[ProductoForm] Imagen ${idx} subida exitosamente: ${url}`);
             return url;
           } catch (err: any) {
+            console.error(`[ProductoForm] Error subiendo imagen ${idx}:`, err);
             alert("Error subiendo imagen: " + (err?.message || err));
             return null;
           }

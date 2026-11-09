@@ -66,8 +66,33 @@ export default function CartPage() {
   const [error, setError] = useState("");
   const { isLogged } = useUser();
   const [atributos, setAtributos] = useState<any[]>([]);
+  const [expandedOffers, setExpandedOffers] = useState<Set<string>>(new Set());
 
   const calcularPrecioData = (p: any) => {
+    // Si el producto tiene una oferta seleccionada, usar ese precio
+    if (p.ofertaSeleccionada && p.ofertaSeleccionada.precio) {
+      const offerPrecioTotal = p.ofertaSeleccionada.precio;
+      const offerCantidad = p.ofertaSeleccionada.cantidad;
+      const precioUnitario = offerPrecioTotal / offerCantidad;
+      return {
+        basePrice: precioUnitario,
+        discount: 0,
+        hasDiscount: false,
+        fakeOldPrice: null,
+        finalPrice: precioUnitario
+      };
+    }
+    // Si tiene precioUnitario específico (de oferta), usarlo
+    if (p.precioUnitario) {
+      return {
+        basePrice: p.precioUnitario,
+        discount: 0,
+        hasDiscount: false,
+        fakeOldPrice: null,
+        finalPrice: p.precioUnitario
+      };
+    }
+    // De lo contrario, usar el cálculo normal
     const { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice } = getSnapshotPricing(p);
     return { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice };
   };
@@ -199,6 +224,39 @@ export default function CartPage() {
     }
   };
 
+  const handleOfferChange = (id: string, cantidad: number, precio: number) => {
+    const prod = carrito.find((p) => resolveCartItemKey(p) === id);
+    if (prod) {
+      const availableStock = resolveAvailableStock(prod);
+      if (cantidad > availableStock) {
+        setError(
+          `Solo hay ${availableStock} unidades disponibles en stock de "${prod.nombre}".`
+        );
+        return;
+      }
+      setError("");
+      removeCarrito(id);
+      addCarrito({
+        ...prod,
+        cantidad,
+        precioUnitario: precio / cantidad, // Guardar precio unitario (precio total / cantidad)
+        ofertaSeleccionada: { cantidad, precio }
+      });
+    }
+  };
+
+  const toggleOffersExpansion = (itemKey: string) => {
+    setExpandedOffers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemKey)) {
+        newSet.delete(itemKey);
+      } else {
+        newSet.add(itemKey);
+      }
+      return newSet;
+    });
+  };
+
   const EmptyCart = () => (
     <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
       <div className="w-20 h-20 rounded-full bg-[var(--muted)] flex items-center justify-center">
@@ -258,6 +316,11 @@ export default function CartPage() {
                   const availableStock = resolveAvailableStock(p);
                   const personalizacionFields = resolvePersonalizacionFields(p);
 
+                  // Calcular ahorro si hay oferta seleccionada
+                  const ahorroOferta = p.ofertaSeleccionada
+                    ? (p.precio || 0) * p.ofertaSeleccionada.cantidad - p.ofertaSeleccionada.precio
+                    : 0;
+
                   return (
                     <div
                       key={itemKey}
@@ -312,7 +375,12 @@ export default function CartPage() {
                         )}
 
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          {hasDiscount && (
+                          {ahorroOferta > 0 && (
+                            <span className="text-xs text-[var(--textSecondary)] line-through">
+                              ${((p.precio || 0) * (p.cantidad || 1)).toFixed(2)}
+                            </span>
+                          )}
+                          {!ahorroOferta && hasDiscount && (
                             <span className="text-xs text-[var(--textSecondary)] line-through">
                               ${fakeOldPrice?.toFixed(2)}
                             </span>
@@ -320,7 +388,12 @@ export default function CartPage() {
                           <span className="text-sm font-bold text-[var(--text)]">
                             ${finalPrice.toFixed(2)}
                           </span>
-                          {hasDiscount && (
+                          {ahorroOferta > 0 && (
+                            <span className="text-[10px] font-bold bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full">
+                              -${ahorroOferta.toFixed(2)}
+                            </span>
+                          )}
+                          {!ahorroOferta && hasDiscount && (
                             <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
                               -{discount}%
                             </span>
@@ -328,23 +401,78 @@ export default function CartPage() {
                         </div>
 
                         <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                          <div className="flex items-center gap-1 bg-[var(--muted)] rounded-lg p-0.5">
-                            <button
-                              onClick={() => handleCantidad(itemKey, (p.cantidad || 1) - 1)}
-                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--card)] transition-colors text-[var(--text)] font-bold text-base"
-                            >
-                              -
-                            </button>
-                            <span className="w-7 text-center text-sm font-semibold text-[var(--text)]">
-                              {p.cantidad || 1}
-                            </span>
-                            <button
-                              onClick={() => handleCantidad(itemKey, (p.cantidad || 1) + 1)}
-                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--card)] transition-colors text-[var(--text)] font-bold text-base"
-                            >
-                              +
-                            </button>
-                          </div>
+                          {/* Si el producto tiene ofertas configuradas, mostrar selector de ofertas */}
+                          {p.landingPage?.offers?.enabled && p.landingPage.offers.ofertas && p.landingPage.offers.ofertas.length > 0 ? (
+                            <div className="flex flex-col gap-2 w-full">
+                              {/* Botón para expandir/colapsar ofertas */}
+                              <button
+                                onClick={() => toggleOffersExpansion(itemKey)}
+                                className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-[var(--muted)] text-[var(--text)] hover:bg-[var(--card)] transition-colors flex items-center justify-between"
+                              >
+                                <span>
+                                  {p.cantidad || 1} x ${((p.precioUnitario || p.precio || 0)).toFixed(2)} c/u
+                                  {ahorroOferta > 0 && (
+                                    <span className="ml-2 text-green-600">
+                                      (Ahorras ${ahorroOferta.toFixed(2)})
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="material-icons-round text-sm">
+                                  {expandedOffers.has(itemKey) ? "expand_less" : "expand_more"}
+                                </span>
+                              </button>
+
+                              {/* Lista de ofertas (expandible) */}
+                              {expandedOffers.has(itemKey) && (
+                                <div className="flex flex-col gap-1.5 mt-1">
+                                  {p.landingPage.offers.ofertas.map((oferta: any, idx: number) => {
+                                    const isSelected = (p.cantidad || 1) === oferta.cantidad && (p.precioUnitario || p.precio) === oferta.precio;
+                                    const ahorro = (p.precio || 0) * oferta.cantidad - oferta.precio;
+                                    return (
+                                      <button
+                                        key={idx}
+                                        onClick={() => {
+                                          handleOfferChange(itemKey, oferta.cantidad, oferta.precio);
+                                          toggleOffersExpansion(itemKey);
+                                        }}
+                                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-between ${
+                                          isSelected
+                                            ? "bg-green-500 text-white shadow-md"
+                                            : "bg-[var(--card)] text-[var(--text)] hover:bg-[var(--muted)]"
+                                        }`}
+                                      >
+                                        <span>{oferta.cantidad} x ${oferta.precio.toFixed(2)}</span>
+                                        {ahorro > 0 && (
+                                          <span className="text-[10px] opacity-75">
+                                            -${ahorro.toFixed(2)}
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            /* Si no hay ofertas, mostrar selector de cantidad normal */
+                            <div className="flex items-center gap-1 bg-[var(--muted)] rounded-lg p-0.5">
+                              <button
+                                onClick={() => handleCantidad(itemKey, (p.cantidad || 1) - 1)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--card)] transition-colors text-[var(--text)] font-bold text-base"
+                              >
+                                -
+                              </button>
+                              <span className="w-7 text-center text-sm font-semibold text-[var(--text)]">
+                                {p.cantidad || 1}
+                              </span>
+                              <button
+                                onClick={() => handleCantidad(itemKey, (p.cantidad || 1) + 1)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--card)] transition-colors text-[var(--text)] font-bold text-base"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
                           <span className="text-xs text-[var(--textSecondary)]">
                             {availableStock} en stock
                           </span>

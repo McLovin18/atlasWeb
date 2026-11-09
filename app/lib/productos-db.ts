@@ -9,6 +9,60 @@ export interface StockVariant {
   variantKey?: string;
 }
 
+// Tipos para Landing Page
+export interface HeroSectionData {
+  enabled?: boolean;
+  imagenes?: string[];
+  titulo?: string;
+  subtitulo?: string;
+  botonTexto?: string;
+  botonLink?: string;
+}
+
+export interface BenefitItem {
+  titulo?: string;
+  descripcion?: string;
+  imagen?: string;
+}
+
+export interface BenefitsSectionData {
+  enabled?: boolean;
+  titulo?: string;
+  items?: BenefitItem[];
+}
+
+export interface TestimonialItem {
+  nombre?: string;
+  descripcion?: string;
+  calificacion?: number;
+  imagen?: string;
+}
+
+export interface TestimonialsSectionData {
+  enabled?: boolean;
+  titulo?: string;
+  items?: TestimonialItem[];
+}
+
+export interface OfferItem {
+  cantidad: number;
+  precio: number;
+}
+
+export interface OffersSectionData {
+  enabled?: boolean;
+  titulo?: string;
+  ofertas?: OfferItem[];
+}
+
+export interface LandingPageData {
+  enabled?: boolean;
+  hero?: HeroSectionData;
+  benefits?: BenefitsSectionData;
+  testimonials?: TestimonialsSectionData;
+  offers?: OffersSectionData;
+}
+
 export interface Producto {
   id: string;
   nombre?: string;
@@ -36,6 +90,7 @@ export interface Producto {
   imagenes?: string[];
   createdAt?: number | Date;
   fechaCreacion?: any;
+  landingPage?: LandingPageData;
   [key: string]: any;
 }
 

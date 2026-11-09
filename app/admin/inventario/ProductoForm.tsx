@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { obtenerMarcas } from "../../lib/marcas-db";
 import { obtenerBodegas } from "../../lib/bodegas-db";
 import { obtenerAtributos, agregarValorAtributo } from "../../lib/atributos-db";
-import type { StockVariant } from "../../lib/productos-db";
+import type { StockVariant, LandingPageData, HeroSectionData, BenefitsSectionData, TestimonialsSectionData, OffersSectionData, AdditionalInfoItem, BenefitItem, TestimonialItem, OfferItem } from "../../lib/productos-db";
 
 // Componente de formulario para crear/modificar productos
 type Producto = {
@@ -41,7 +41,7 @@ type ProductoFormProps = {
   onCancel?: () => void;
 };
 
-type FormSection = "general" | "stock" | "photos" | "price";
+type FormSection = "general" | "stock" | "photos" | "price" | "landing";
 
 export default function ProductoForm({ initialData = null, onSave, onCancel }: ProductoFormProps) {
     // Estado de carga para el submit
@@ -86,6 +86,13 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
       ? String(initialData.promocionarDescuento)
       : "0"
   );
+
+  // Landing Page States
+  const [landingPageEnabled, setLandingPageEnabled] = useState<boolean>(Boolean(initialData?.landingPage?.enabled));
+  const [heroSection, setHeroSection] = useState<HeroSectionData>(initialData?.landingPage?.hero || { enabled: false });
+  const [benefitsSection, setBenefitsSection] = useState<BenefitsSectionData>(initialData?.landingPage?.benefits || { enabled: false });
+  const [testimonialsSection, setTestimonialsSection] = useState<TestimonialsSectionData>(initialData?.landingPage?.testimonials || { enabled: false });
+  const [offersSection, setOffersSection] = useState<OffersSectionData>(initialData?.landingPage?.offers || { enabled: false });
 
   function getVariantKey(attributes: Record<string, string>) {
     return Object.keys(attributes)
@@ -1224,6 +1231,462 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     </section>
   );
 
+  const renderLandingSection = () => (
+    <section className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+      <div className="mb-8">
+        <h3 className="text-2xl font-semibold text-slate-900">Landing Page del Producto</h3>
+        <p className="mt-2 text-sm text-slate-500">Configura una página personalizada para este producto con secciones especiales.</p>
+      </div>
+
+      {/* Toggle Principal */}
+      <div className="mb-8">
+        <label className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-all">
+          <input
+            type="checkbox"
+            checked={landingPageEnabled}
+            onChange={e => setLandingPageEnabled(e.target.checked)}
+            className="h-6 w-6 rounded cursor-pointer accent-blue-600"
+          />
+          <div>
+            <span className="text-lg font-bold text-slate-900">Producto con Landing Page</span>
+            <p className="text-sm text-slate-600">Activar para mostrar secciones personalizadas en la página del producto</p>
+          </div>
+        </label>
+      </div>
+
+      {landingPageEnabled && (
+        <div className="space-y-8">
+          {/* Hero Section */}
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <button
+              type="button"
+              onClick={() => setHeroSection(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="material-icons-round text-blue-600 text-2xl">star</span>
+                <span className="text-lg font-semibold text-slate-900">Hero Section (+)</span>
+              </div>
+              <span className={`material-icons-round text-slate-600 ${heroSection.enabled ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+
+            {heroSection.enabled && (
+              <div className="mt-4 space-y-4 pl-4 border-l-2 border-blue-300">
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Imágenes (mínimo 1)</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      const urls = await Promise.all(files.map(async (file) => {
+                        const ext = file.name.split('.').pop();
+                        const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_hero_${Date.now()}.${ext}`;
+                        const path = `productos/${nombreArchivo}`;
+                        try {
+                          const url = await uploadImageAndGetUrl(file, path);
+                          return url;
+                        } catch (err) {
+                          console.error("Error subiendo imagen:", err);
+                          return null;
+                        }
+                      }));
+                      setHeroSection(prev => ({
+                        ...prev,
+                        imagenes: [...(prev.imagenes || []), ...urls.filter((u): u is string => u !== null)]
+                      }));
+                    }}
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900"
+                  />
+                  {heroSection.imagenes && heroSection.imagenes.length > 0 && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {heroSection.imagenes.map((img, idx) => (
+                        <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden">
+                          <img src={img} alt={`Hero ${idx}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setHeroSection(prev => ({
+                              ...prev,
+                              imagenes: prev.imagenes?.filter((_, i) => i !== idx)
+                            }))}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Título (opcional)</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={heroSection.titulo || ""}
+                    onChange={e => setHeroSection(prev => ({ ...prev, titulo: e.target.value }))}
+                    placeholder="Título principal de la sección"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Subtítulo (opcional)</span>
+                  <textarea
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={heroSection.subtitulo || ""}
+                    onChange={e => setHeroSection(prev => ({ ...prev, subtitulo: e.target.value }))}
+                    placeholder="Subtítulo descriptivo"
+                    rows={2}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Texto del botón (opcional)</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={heroSection.botonTexto || ""}
+                    onChange={e => setHeroSection(prev => ({ ...prev, botonTexto: e.target.value }))}
+                    placeholder="Comprar ahora"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Link del botón (opcional)</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={heroSection.botonLink || ""}
+                    onChange={e => setHeroSection(prev => ({ ...prev, botonLink: e.target.value }))}
+                    placeholder="#"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Benefits Section */}
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <button
+              type="button"
+              onClick={() => setBenefitsSection(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="material-icons-round text-green-600 text-2xl">verified</span>
+                <span className="text-lg font-semibold text-slate-900">Benefits Section (+)</span>
+              </div>
+              <span className={`material-icons-round text-slate-600 ${benefitsSection.enabled ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+
+            {benefitsSection.enabled && (
+              <div className="mt-4 space-y-4 pl-4 border-l-2 border-green-300">
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Título de la sección</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={benefitsSection.titulo || ""}
+                    onChange={e => setBenefitsSection(prev => ({ ...prev, titulo: e.target.value }))}
+                    placeholder="Beneficios del producto"
+                  />
+                </label>
+
+                <div className="space-y-4">
+                  <span className="text-sm font-semibold text-slate-700">Items de beneficios</span>
+                  {benefitsSection.items?.map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-50 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-slate-600">Item {idx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => setBenefitsSection(prev => ({
+                            ...prev,
+                            items: prev.items?.filter((_, i) => i !== idx)
+                          }))}
+                          className="text-red-500 text-sm hover:underline"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                      <input
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                        placeholder="Título del beneficio"
+                        value={item.titulo || ""}
+                        onChange={e => setBenefitsSection(prev => ({
+                          ...prev,
+                          items: prev.items?.map((it, i) => i === idx ? { ...it, titulo: e.target.value } : it)
+                        }))}
+                      />
+                      <textarea
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                        placeholder="Descripción del beneficio"
+                        value={item.descripcion || ""}
+                        onChange={e => setBenefitsSection(prev => ({
+                          ...prev,
+                          items: prev.items?.map((it, i) => i === idx ? { ...it, descripcion: e.target.value } : it)
+                        }))}
+                        rows={2}
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const ext = file.name.split('.').pop();
+                            const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_benefit_${idx}_${Date.now()}.${ext}`;
+                            const path = `productos/${nombreArchivo}`;
+                            try {
+                              const url = await uploadImageAndGetUrl(file, path);
+                              setBenefitsSection(prev => ({
+                                ...prev,
+                                items: prev.items?.map((it, i) => i === idx ? { ...it, imagen: url } : it)
+                              }));
+                            } catch (err) {
+                              console.error("Error subiendo imagen:", err);
+                            }
+                          }
+                        }}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                      />
+                      {item.imagen && (
+                        <img src={item.imagen} alt={`Beneficio ${idx}`} className="w-16 h-16 object-cover rounded-lg" />
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setBenefitsSection(prev => ({
+                      ...prev,
+                      items: [...(prev.items || []), { titulo: "", descripcion: "", imagen: "" }]
+                    }))}
+                    className="w-full py-2 rounded-lg border-2 border-dashed border-slate-300 text-slate-600 hover:border-green-500 hover:text-green-600 transition-colors"
+                  >
+                    + Agregar beneficio
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Testimonials Section */}
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <button
+              type="button"
+              onClick={() => setTestimonialsSection(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="material-icons-round text-yellow-600 text-2xl">rate_review</span>
+                <span className="text-lg font-semibold text-slate-900">Testimonials Section (+)</span>
+              </div>
+              <span className={`material-icons-round text-slate-600 ${testimonialsSection.enabled ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+
+            {testimonialsSection.enabled && (
+              <div className="mt-4 space-y-4 pl-4 border-l-2 border-yellow-300">
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Título de la sección</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base"
+                    value={testimonialsSection.titulo || ""}
+                    onChange={e => setTestimonialsSection(prev => ({ ...prev, titulo: e.target.value }))}
+                    placeholder="Lo que dicen nuestros clientes"
+                  />
+                </label>
+
+                <div className="space-y-4">
+                  <span className="text-sm font-semibold text-slate-700">Testimonios</span>
+                  {testimonialsSection.items?.map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-50 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-slate-600">Testimonio {idx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => setTestimonialsSection(prev => ({
+                            ...prev,
+                            items: prev.items?.filter((_, i) => i !== idx)
+                          }))}
+                          className="text-red-500 text-sm hover:underline"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                      <input
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                        placeholder="Nombre de la persona"
+                        value={item.nombre || ""}
+                        onChange={e => setTestimonialsSection(prev => ({
+                          ...prev,
+                          items: prev.items?.map((it, i) => i === idx ? { ...it, nombre: e.target.value } : it)
+                        }))}
+                      />
+                      <textarea
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                        placeholder="Descripción del testimonio"
+                        value={item.descripcion || ""}
+                        onChange={e => setTestimonialsSection(prev => ({
+                          ...prev,
+                          items: prev.items?.map((it, i) => i === idx ? { ...it, descripcion: e.target.value } : it)
+                        }))}
+                        rows={2}
+                      />
+                      <label className="block">
+                        <span className="text-sm text-slate-600">Calificación (1-5 estrellas)</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="5"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm mt-1 text-slate-900"
+                          value={item.calificacion || 5}
+                          onChange={e => setTestimonialsSection(prev => ({
+                            ...prev,
+                            items: prev.items?.map((it, i) => i === idx ? { ...it, calificacion: Number(e.target.value) } : it)
+                          }))}
+                        />
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const ext = file.name.split('.').pop();
+                            const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_testimonial_${idx}_${Date.now()}.${ext}`;
+                            const path = `productos/${nombreArchivo}`;
+                            try {
+                              const url = await uploadImageAndGetUrl(file, path);
+                              setTestimonialsSection(prev => ({
+                                ...prev,
+                                items: prev.items?.map((it, i) => i === idx ? { ...it, imagen: url } : it)
+                              }));
+                            } catch (err) {
+                              console.error("Error subiendo imagen:", err);
+                            }
+                          }
+                        }}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+                      />
+                      {item.imagen && (
+                        <img src={item.imagen} alt={`Testimonio ${idx}`} className="w-16 h-16 object-cover rounded-full" />
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setTestimonialsSection(prev => ({
+                      ...prev,
+                      items: [...(prev.items || []), { nombre: "", descripcion: "", calificacion: 5, imagen: "" }]
+                    }))}
+                    className="w-full py-2 rounded-lg border-2 border-dashed border-slate-300 text-slate-600 hover:border-yellow-500 hover:text-yellow-600 transition-colors"
+                  >
+                    + Agregar testimonio
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Offers Section */}
+          <div className="rounded-2xl border border-slate-200 p-6">
+            <button
+              type="button"
+              onClick={() => setOffersSection(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <span className="material-icons-round text-purple-600 text-2xl">local_offer</span>
+                <span className="text-lg font-semibold text-slate-900">Offers Section (+)</span>
+              </div>
+              <span className={`material-icons-round text-slate-600 ${offersSection.enabled ? 'rotate-180' : ''}`}>
+                expand_more
+              </span>
+            </button>
+
+            {offersSection.enabled && (
+              <div className="mt-4 space-y-4 pl-4 border-l-2 border-purple-300">
+                <label className="block">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">Título de la sección</span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900"
+                    value={offersSection.titulo || ""}
+                    onChange={e => setOffersSection(prev => ({ ...prev, titulo: e.target.value }))}
+                    placeholder="Ofertas especiales"
+                  />
+                </label>
+
+                <div className="space-y-4">
+                  <span className="text-sm font-semibold text-slate-700">Ofertas por cantidad</span>
+                  {offersSection.ofertas?.map((oferta, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-slate-50 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-slate-600">Oferta {idx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => setOffersSection(prev => ({
+                            ...prev,
+                            ofertas: prev.ofertas?.filter((_, i) => i !== idx)
+                          }))}
+                          className="text-red-500 text-sm hover:underline"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-sm text-slate-600">Cantidad</label>
+                          <input
+                            type="number"
+                            min="1"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm mt-1 text-slate-900"
+                            value={oferta.cantidad}
+                            onChange={e => setOffersSection(prev => ({
+                              ...prev,
+                              ofertas: prev.ofertas?.map((of, i) => i === idx ? { ...of, cantidad: Number(e.target.value) } : of)
+                            }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-slate-600">Precio total</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm mt-1 text-slate-900"
+                            value={oferta.precio}
+                            onChange={e => setOffersSection(prev => ({
+                              ...prev,
+                              ofertas: prev.ofertas?.map((of, i) => i === idx ? { ...of, precio: Number(e.target.value) } : of)
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setOffersSection(prev => ({
+                      ...prev,
+                      ofertas: [...(prev.ofertas || []), { cantidad: 1, precio: Number(precio) }]
+                    }))}
+                    className="w-full py-2 rounded-lg border-2 border-dashed border-slate-300 text-slate-600 hover:border-purple-500 hover:text-purple-600 transition-colors"
+                  >
+                    + Agregar oferta
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+
   // Generación automática de SKU basada en la última categoría seleccionada
   const generateAutomaticSku = async (): Promise<string | undefined> => {
     try {
@@ -1388,7 +1851,14 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         promocionarDescripcion: promocionar ? promocionarDescripcion : undefined,
         promocionarDescuento: promocionar && promocionarDescuento !== "" ? Number(promocionarDescuento) : undefined,
         descripcion,
-        caracteristicas
+        caracteristicas,
+        landingPage: landingPageEnabled ? {
+          enabled: true,
+          hero: heroSection,
+          benefits: benefitsSection,
+          testimonials: testimonialsSection,
+          offers: offersSection
+        } : undefined
       });
 
       // Resetear campos solo si es creación (no edición)
@@ -1422,12 +1892,14 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
     { id: "stock", label: "Stock/Variaciones", description: "Stock simple o variables" },
     { id: "photos", label: "Fotos", description: "Imágenes y orden" },
     { id: "price", label: "Precio", description: "Precio y descuentos" },
+    { id: "landing", label: "Landing Page", description: "Página personalizada del producto" },
   ];
 
   const renderActiveEditSection = () => {
     if (activeSection === "stock") return renderStockSection();
     if (activeSection === "photos") return renderPhotosSection();
     if (activeSection === "price") return renderPriceSection();
+    if (activeSection === "landing") return renderLandingSection();
     return renderGeneralSection();
   };
 

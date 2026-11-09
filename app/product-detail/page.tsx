@@ -15,6 +15,11 @@ import BottomBarPublic from "../components/BottomBarPublic";
 import dynamic from "next/dynamic";
 import { getCartItemKey } from "../context/userLocalStorage";
 import { getCatalogPricing } from "../lib/pricing";
+import HeroSection from "../components/products-page/HeroSection";
+import BenefitsSection from "../components/products-page/BenefitsSection";
+import TestimonialsSection from "../components/products-page/TestimonialsSection";
+import OffersSection from "../components/products-page/OffersSection";
+import AdditionalInfoSection from "../components/products-page/AdditionalInfoSection";
 
 const Markdown = dynamic(() => import("../components/Markdown"), { ssr: false });
 
@@ -37,6 +42,7 @@ export default function ProductDetailPage({ params }) {
   const [currentStock, setCurrentStock] = useState(0);
   const [atributos, setAtributos] = useState<Record<string, string>>({}); // Mapeo de ID -> nombre
   const [personalizacionValues, setPersonalizacionValues] = useState<Record<string, string>>({});
+  const [selectedOffer, setSelectedOffer] = useState<{ cantidad: number; precio: number } | null>(null);
 
   const {
     isLogged, user, isAdmin,
@@ -287,12 +293,16 @@ export default function ProductDetailPage({ params }) {
     if ((producto as any)?.personalizado && (producto as any)?.camposPersonalizacion) {
       const camposRequeridos = (producto as any).camposPersonalizacion;
       const camposFaltantes = camposRequeridos.filter((campo: any) => !personalizacionValues[campo.id] || personalizacionValues[campo.id].trim() === "");
-      
+
       if (camposFaltantes.length > 0) {
         showToast("Por favor completa todos los campos de personalización", "error");
         return;
       }
     }
+
+    // Si hay una oferta seleccionada, usar sus datos
+    const finalCantidad = selectedOffer ? selectedOffer.cantidad : cantidad;
+    const finalPrecioUnitario = selectedOffer ? selectedOffer.precio / selectedOffer.cantidad : finalPrice;
 
     if (inCart && currentCartKey) {
       removeCarrito(currentCartKey);
@@ -300,12 +310,13 @@ export default function ProductDetailPage({ params }) {
     } else if (currentCartKey) {
       const cartItem = {
         ...producto,
-        cantidad,
+        cantidad: finalCantidad,
         precioBase: basePrice,
-        precioUnitario: finalPrice,
+        precioUnitario: finalPrecioUnitario,
         stock: maxCantidad,
         ...(hasVariations && { selectedVariations, variationAttributeIds }),
         ...(producto as any)?.personalizado && { personalizacionValues },
+        ...(selectedOffer && { ofertaSeleccionada: selectedOffer }),
         cartKey: currentCartKey,
       };
       addCarrito(cartItem);
@@ -365,348 +376,381 @@ export default function ProductDetailPage({ params }) {
     <div className="min-h-screen flex flex-col mt-2 bg-[var(--bg)] text-[var(--text)] transition-colors">
       <BottomBarPublic/>
 
-      <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-10">
-        <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
+      {/* ── SIN LANDING PAGE: Diseño original ───────────────────────── */}
+      {!producto?.landingPage?.enabled && (
+        <>
+          <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-10">
+            <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
 
-          {/* ══ GALERÍA + TABS ══════════════════════════════════════ */}
-          <div className={`w-full ${imageContainerWidthClass} flex flex-col gap-3`}>
+              {/* ══ GALERÍA + TABS ══════════════════════════════════════ */}
+              <div className={`w-full ${imageContainerWidthClass} flex flex-col gap-3`}>
 
-            {/* Imagen principal */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-[var(--card)] border border-[var(--border)]">
-              {hasDiscount && (
-                <span className="absolute top-3 left-3 z-10 bg-[var(--secondary)] text-[var(--secondaryForeground)] text-xs font-bold px-2 py-0.5 rounded-full">
-                  -{discount}%
-                </span>
-              )}
-              <img
-                src={producto.imagenes[imgIdx]}
-                alt={producto.nombre}
-                className="w-full h-full object-contain p-5"
-              />
-              {producto.imagenes.length > 1 && imgIdx > 0 && (
-                <button
-                  onClick={() => setImgIdx(imgIdx - 1)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] shadow flex items-center justify-center hover:scale-105 transition-transform"
-                >
-                  <span className="material-icons-round text-white/70 text-lg">chevron_left</span>
-                </button>
-              )}
-              {producto.imagenes.length > 1 && imgIdx < producto.imagenes.length - 1 && (
-                <button
-                  onClick={() => setImgIdx(imgIdx + 1)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] shadow flex items-center justify-center hover:scale-105 transition-transform"
-                >
-                  <span className="material-icons-round text-white/70 text-lg">chevron_right</span>
-                </button>
-              )}
-            </div>
-
-            {/* Miniaturas */}
-            {producto.imagenes.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-0.5">
-                {producto.imagenes.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setImgIdx(idx)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all bg-[var(--bgSecondary)] ${
-                      imgIdx === idx
-                        ? "border-white/30 scale-105"
-                        : "border-transparent opacity-50 hover:opacity-80"
-                    }`}
-                  >
-                    <img src={img} alt="" className="w-full h-full object-contain p-1.5" />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* ── TABS: Características / Reseñas — solo desktop ───── */}
-            <div className="hidden md:flex mt-1 flex-col gap-0 py-18">
-              {/* Botones tab */}
-              <div className="flex rounded-xl overflow-hidden border border-white/[0.08]">
-                {hasCaracteristicas && (
-                  <button
-                    onClick={() => handleTabToggle("caracteristicas")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
-                      activeTab === "caracteristicas"
-                            ? "bg-[var(--primary)] text-[var(--primaryForeground)]"
-                            : "bg-[var(--card)] text-[var(--text)] hover:bg-[var(--bgSecondary)]"
-                    }`}
-                  >
-                    <span className="material-icons-round text-[16px]">list_alt</span>
-                    Características
-                  </button>
-                )}
-                <button
-                  onClick={() => handleTabToggle("resenas")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
-                    hasCaracteristicas ? "border-l border-white/[0.08]" : ""
-                  } ${
-                    activeTab === "resenas"
-                            ? "bg-[var(--primary)] text-[var(--primaryForeground)]"
-                            : "bg-[var(--card)] text-[var(--text)] hover:bg-[var(--bgSecondary)]"
-                  }`}
-                >
-                  <span className="material-icons-round text-[16px]">star_outline</span>
-                  Reseñas
-                  {reviews.length > 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                      activeTab === "resenas"
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {reviews.length}
+                {/* Imagen principal */}
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-[var(--card)] border border-[var(--border)]">
+                  {hasDiscount && (
+                    <span className="absolute top-3 left-3 z-10 bg-[var(--secondary)] text-[var(--secondaryForeground)] text-xs font-bold px-2 py-0.5 rounded-full">
+                      -{discount}%
                     </span>
                   )}
-                </button>
-              </div>
-
-              {/* Panel de contenido del tab activo */}
-              {activeTab && (
-                <div className="border border-t-0 border-[var(--border)] rounded-b-xl px-4 py-4 bg-[var(--bgSecondary)]">
-
-                  {/* Panel: Características */}
-                  {activeTab === "caracteristicas" && hasCaracteristicas && (
-                    <ul className="space-y-2">
-                      {producto.caracteristicas.map((c, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5 text-sm text-white/80">
-                          <span className="w-1 h-1 rounded-full bg-white/20 mt-2 flex-shrink-0" />
-                          <Markdown>{c}</Markdown>
-                        </li>
-                      ))}
-                    </ul>
+                  <img
+                    src={producto.imagenes[imgIdx]}
+                    alt={producto.nombre}
+                    className="w-full h-full object-contain p-5"
+                  />
+                  {producto.imagenes.length > 1 && imgIdx > 0 && (
+                    <button
+                      onClick={() => setImgIdx(imgIdx - 1)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] shadow flex items-center justify-center hover:scale-105 transition-transform"
+                    >
+                      <span className="material-icons-round text-white/70 text-lg">chevron_left</span>
+                    </button>
                   )}
-
-                  {/* Panel: Reseñas */}
-                  {activeTab === "resenas" && (
-                    <ReviewsSection {...reviewsProps} />
+                  {producto.imagenes.length > 1 && imgIdx < producto.imagenes.length - 1 && (
+                    <button
+                      onClick={() => setImgIdx(imgIdx + 1)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[var(--card)] border border-[var(--border)] shadow flex items-center justify-center hover:scale-105 transition-transform"
+                    >
+                      <span className="material-icons-round text-white/70 text-lg">chevron_right</span>
+                    </button>
                   )}
-
                 </div>
-              )}
-            </div>
-            {/* ── FIN TABS ─────────────────────────────────────────── */}
 
-          </div>
+                {/* Miniaturas */}
+                {producto.imagenes.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-0.5">
+                    {producto.imagenes.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setImgIdx(idx)}
+                        className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all bg-[var(--bgSecondary)] ${
+                          imgIdx === idx
+                            ? "border-white/30 scale-105"
+                            : "border-transparent opacity-50 hover:opacity-80"
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-contain p-1.5" />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-          {/* ══ INFO ════════════════════════════════════════════════ */}
-          <div className="flex-1 flex flex-col gap-5 min-w-0">
-
-            {/* Nombre + SKU */}
-            <div>
-              <h1
-                style={{ color: "var(--text)" }}
-                className="text-2xl sm:text-3xl font-bold leading-tight break-words max-w-full whitespace-pre-line"
-                style={{ wordBreak: "break-word", maxWidth: "100%" }}
-                title={producto.nombre}
-              >
-                {producto.nombre}
-              </h1>
-              <p style={{ color: "var(--textSecondary)" }} className="text-xs mt-1.5">
-                SKU: {producto.sku || producto.id}
-              </p>
-            </div>
-
-            {/* Rating inline */}
-            {reviews.length > 0 && (
-              <div className="flex items-center gap-1.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} className={`text-base ${i < Math.round(avgRating) ? "text-yellow-400" : "text-white/15"}`}>★</span>
-                ))}
-                <span style={{ color: "var(--textSecondary)" }} className="text-xs ml-1">
-                  {avgRating.toFixed(1)} ({reviews.length})
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-baseline gap-3 flex-wrap">
-              {hasDiscount && (
-                <span style={{ color: "var(--textSecondary)" }} className="text-sm line-through">
-                  ${fakeOldPrice?.toFixed(2)}
-                </span>
-              )}
-              <span style={{ color: "var(--text)" }} className="text-3xl font-extrabold">
-                ${finalPrice.toFixed(2)}
-              </span>
-              {hasDiscount && (
-                <span className="text-xs font-semibold text-red-500 bg-red-400/10 px-2 py-0.5 rounded-full">
-                  {discount}% OFF
-                </span>
-              )}
-            </div>
-
-            <div style={{ borderColor: "var(--border)" }} className="h-px bg-white/[0.08]" />
-
-            {/* Stock */}
-            <div className="flex items-center gap-2">
-              <span style={{ color: "var(--textSecondary)" }} className="text-xs font-medium">Disponibilidad:</span>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId])
-                  ? "bg-blue-400/10 text-blue-400"
-                  : maxCantidad > 0
-                  ? "bg-green-400/10 text-green-400"
-                  : "bg-red-400/10 text-red-400"
-              }`}>
-                {hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId])
-                  ? "Selecciona opciones para ver stock"
-                  : maxCantidad > 0
-                  ? `${maxCantidad} en stock`
-                  : "Sin stock"}
-              </span>
-            </div>
-
-            {/* Selectors de variaciones */}
-            {hasVariations && variationAttributeIds.length > 0 && (
-              <VariationsManager
-                stockVariants={stockVariants}
-                variationAttributeIds={variationAttributeIds}
-                attributeNames={atributos}
-                selectedVariations={selectedVariations}
-                onVariationChange={(attrId, value) => {
-                  setSelectedVariations(prev => {
-                    const updated = {
-                      ...prev,
-                      [attrId]: value
-                    };
-
-                    return updated;
-                  });
-
-                  setCantidad(1);
-                }}
-                onStockChange={setCurrentStock}
-              />
-            )}
-
-            {/* Campos de personalización */}
-            {(producto as any)?.personalizado && (producto as any)?.camposPersonalizacion && (producto as any).camposPersonalizacion.length > 0 && (
-              <div className="mt-6 rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bgSecondary)" }}>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "#fbbf24" }}>
-                  <span className="material-icons-round text-base">auto_awesome</span>
-                  Personalización
-                </h3>
-                <div className="space-y-3">
-                  {(producto as any).camposPersonalizacion.map((campo: any) => (
-                    <div key={campo.id}>
-                      <label className="block text-xs font-medium mb-1" style={{ color: "var(--text)" }}>
-                        {campo.nombre}
-                      </label>
-                      {campo.tipo === "texto" ? (
-                      <input
-                        type="text"
-                        maxLength={40}
-                        value={personalizacionValues[campo.id] || ""}
-                        onChange={(e) =>
-                          setPersonalizacionValues((prev) => ({
-                            ...prev,
-                            [campo.id]: e.target.value,
-                          }))
-                        }
-                        placeholder={`Ingresa ${campo.nombre.toLowerCase()}`}
-                        className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
-                        style={{
-                          borderColor: "var(--border)",
-                          background: "var(--background)",
-                          color: "var(--text)",
-                        }}
-                      />
-                      ) : campo.tipo === "numero" ? (
-                        <input
-                          type="number"
-                          value={personalizacionValues[campo.id] || ""}
-                          onChange={(e) => setPersonalizacionValues(prev => ({ ...prev, [campo.id]: e.target.value }))}
-                          placeholder={`Ingresa ${campo.nombre.toLowerCase()}`}
-                          className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
-                          style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--text)" }}
-                        />
-                      ) : campo.tipo === "fecha" ? (
-                        <input
-                          type="date"
-                          value={personalizacionValues[campo.id] || ""}
-                          onChange={(e) => setPersonalizacionValues(prev => ({ ...prev, [campo.id]: e.target.value }))}
-                          className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
-                          style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--text)" }}
-                        />
-                      ) : null}
-                      <div className="flex justify-end mt-1">
-                        <span
-                          className="text-xs"
-                          style={{ color: "var(--textSecondary)" }}
-                        >
-                          {(personalizacionValues[campo.id] || "").length}/40
+                {/* ── TABS: Características / Reseñas — solo desktop ───── */}
+                <div className="hidden md:flex mt-1 flex-col gap-0 py-18">
+                  {/* Botones tab */}
+                  <div className="flex rounded-xl overflow-hidden border border-white/[0.08]">
+                    {hasCaracteristicas && (
+                      <button
+                        onClick={() => handleTabToggle("caracteristicas")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                          activeTab === "caracteristicas"
+                                ? "bg-[var(--primary)] text-[var(--primaryForeground)]"
+                                : "bg-[var(--card)] text-[var(--text)] hover:bg-[var(--bgSecondary)]"
+                        }`}
+                      >
+                        <span className="material-icons-round text-[16px]">list_alt</span>
+                        Características
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleTabToggle("resenas")}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                        hasCaracteristicas ? "border-l border-white/[0.08]" : ""
+                      } ${
+                        activeTab === "resenas"
+                                ? "bg-[var(--primary)] text-[var(--primaryForeground)]"
+                                : "bg-[var(--card)] text-[var(--text)] hover:bg-[var(--bgSecondary)]"
+                      }`}
+                    >
+                      <span className="material-icons-round text-[16px]">star_outline</span>
+                      Reseñas
+                      {reviews.length > 0 && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                          activeTab === "resenas"
+                            ? "bg-white/20 text-white"
+                            : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {reviews.length}
                         </span>
-                      </div>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Panel de contenido del tab activo */}
+                  {activeTab && (
+                    <div className="border border-t-0 border-[var(--border)] rounded-b-xl px-4 py-4 bg-[var(--bgSecondary)]">
+
+                      {/* Panel: Características */}
+                      {activeTab === "caracteristicas" && hasCaracteristicas && (
+                        <ul className="space-y-2">
+                          {producto.caracteristicas.map((c, idx) => (
+                            <li key={idx} className="flex items-start gap-2.5 text-sm text-white/80">
+                              <span className="w-1 h-1 rounded-full bg-white/20 mt-2 flex-shrink-0" />
+                              <Markdown>{c}</Markdown>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* Panel: Reseñas */}
+                      {activeTab === "resenas" && (
+                        <ReviewsSection {...reviewsProps} />
+                      )}
+
                     </div>
-                    
-                  ))}
+                  )}
                 </div>
-              </div>
-            )}
+                {/* ── FIN TABS ─────────────────────────────────────────── */}
 
-            {/* Cantidad */}
-            {maxCantidad > 0 && (
-              <div className="flex items-center gap-3">
-                <span style={{ color: "var(--textSecondary)" }} className="text-xs font-medium">Cantidad:</span>
-                <div style={{ background: "var(--bgSecondary)" }} className="flex items-center rounded-xl p-1 gap-1">
-                  <button
-                    onClick={() => setCantidad((v) => Math.max(1, v - 1))}
+              </div>
+
+              {/* ══ INFO ════════════════════════════════════════════════ */}
+              <div className="flex-1 flex flex-col gap-5 min-w-0">
+
+                {/* Nombre + SKU */}
+                <div>
+                  <h1
                     style={{ color: "var(--text)" }}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 font-bold text-lg transition-colors"
-                  >−</button>
-                  <span style={{ color: "var(--text)" }} className="w-9 text-center text-sm font-semibold">
-                    {cantidad}
-                  </span>
-                  <button
-                    onClick={() => setCantidad((v) => Math.min(maxCantidad, v + 1))}
-                    style={{ color: "var(--text)" }}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 font-bold text-lg transition-colors"
-                  >+</button>
+                    className="text-2xl sm:text-3xl font-bold leading-tight break-words max-w-full whitespace-pre-line"
+                    style={{ wordBreak: "break-word", maxWidth: "100%" }}
+                    title={producto.nombre}
+                  >
+                    {producto.nombre}
+                  </h1>
+                  <p style={{ color: "var(--textSecondary)" }} className="text-xs mt-1.5">
+                    SKU: {producto.sku || producto.id}
+                  </p>
                 </div>
-              </div>
-            )}
 
-            {/* Acciones */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddCart}
-                disabled={maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border transition-all ${
-                  maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))
-                    ? "bg-white/5 text-white/30 border-white/10 cursor-not-allowed opacity-50 shadow-none"
-                    : inCart
-                      ? "bg-[var(--card)] text-[var(--text)] border-[var(--primary)] hover:border-[var(--primaryHover)] hover:shadow-md"
-                      : "bg-[var(--card)] text-[var(--text)] border-[var(--border)] hover:border-[var(--primary)] hover:shadow-md"
-                }`}
-              >
-                <span className="material-icons-round text-[18px]">
-                  {inCart ? "remove_shopping_cart" : "add_shopping_cart"}
-                </span>
-                {inCart ? "Quitar del carrito" : "Añadir al carrito"}
-              </button>
+                {/* Rating inline */}
+                {reviews.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className={`text-base ${i < Math.round(avgRating) ? "text-yellow-400" : "text-white/15"}`}>★</span>
+                    ))}
+                    <span style={{ color: "var(--textSecondary)" }} className="text-xs ml-1">
+                      {avgRating.toFixed(1)} ({reviews.length})
+                    </span>
+                  </div>
+                )}
 
-              {isLogged && (
-                <button
-                  onClick={handleFav}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                    isFav
-                      ? "bg-red-500 text-white shadow"
-                      : "bg-[var(--card)] border border-[var(--border)] text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:shadow-sm"
-                  }`}
-                  title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
-                >
-                  <span className="material-icons-round text-xl">
-                    {isFav ? "favorite" : "favorite_border"}
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  {hasDiscount && (
+                    <span style={{ color: "var(--textSecondary)" }} className="text-sm line-through">
+                      ${fakeOldPrice?.toFixed(2)}
+                    </span>
+                  )}
+                  <span style={{ color: "var(--text)" }} className="text-3xl font-extrabold">
+                    ${finalPrice.toFixed(2)}
                   </span>
-                </button>
-              )}
-            </div>
+                  {hasDiscount && (
+                    <span className="text-xs font-semibold text-red-500 bg-red-400/10 px-2 py-0.5 rounded-full">
+                      {discount}% OFF
+                    </span>
+                  )}
+                </div>
 
-            {/* Descripción debajo de Añadir al carrito */}
-            <div className="mt-6">
-              <h2 style={{ color: "var(--text)" }} className="text-lg font-semibold mb-2">Descripción del producto</h2>
-              {rawDescripcion.trim() ? (
-                descItems.length > 0 && (descItems.length > 1 || descItems[0].sub.length > 0 || descItems[0].text !== rawDescripcion.trim()) ? (
+                <div style={{ borderColor: "var(--border)" }} className="h-px bg-white/[0.08]" />
+
+                {/* Stock */}
+                <div className="flex items-center gap-2">
+                  <span style={{ color: "var(--textSecondary)" }} className="text-xs font-medium">Disponibilidad:</span>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId])
+                      ? "bg-blue-400/10 text-blue-400"
+                      : maxCantidad > 0
+                      ? "bg-green-400/10 text-green-400"
+                      : "bg-red-400/10 text-red-400"
+                  }`}>
+                    {hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId])
+                      ? "Selecciona opciones para ver stock"
+                      : maxCantidad > 0
+                      ? `${maxCantidad} en stock`
+                      : "Sin stock"}
+                  </span>
+                </div>
+
+                {/* Selectors de variaciones */}
+                {hasVariations && variationAttributeIds.length > 0 && (
+                  <VariationsManager
+                    stockVariants={stockVariants}
+                    variationAttributeIds={variationAttributeIds}
+                    attributeNames={atributos}
+                    selectedVariations={selectedVariations}
+                    onVariationChange={(attrId, value) => {
+                      setSelectedVariations(prev => {
+                        const updated = {
+                          ...prev,
+                          [attrId]: value
+                        };
+
+                        return updated;
+                      });
+
+                      setCantidad(1);
+                    }}
+                    onStockChange={setCurrentStock}
+                  />
+                )}
+
+                {/* Campos de personalización */}
+                {(producto as any)?.personalizado && (producto as any)?.camposPersonalizacion && (producto as any).camposPersonalizacion.length > 0 && (
+                  <div className="mt-6 rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bgSecondary)" }}>
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "#fbbf24" }}>
+                      <span className="material-icons-round text-base">auto_awesome</span>
+                      Personalización
+                    </h3>
+                    <div className="space-y-3">
+                      {(producto as any).camposPersonalizacion.map((campo: any) => (
+                        <div key={campo.id}>
+                          <label className="block text-xs font-medium mb-1" style={{ color: "var(--text)" }}>
+                            {campo.nombre}
+                          </label>
+                          {campo.tipo === "texto" ? (
+                          <input
+                            type="text"
+                            maxLength={40}
+                            value={personalizacionValues[campo.id] || ""}
+                            onChange={(e) =>
+                              setPersonalizacionValues((prev) => ({
+                                ...prev,
+                                [campo.id]: e.target.value,
+                              }))
+                            }
+                            placeholder={`Ingresa ${campo.nombre.toLowerCase()}`}
+                            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
+                            style={{
+                              borderColor: "var(--border)",
+                              background: "var(--background)",
+                              color: "var(--text)",
+                            }}
+                          />
+                          ) : campo.tipo === "numero" ? (
+                            <input
+                              type="number"
+                              value={personalizacionValues[campo.id] || ""}
+                              onChange={(e) => setPersonalizacionValues(prev => ({ ...prev, [campo.id]: e.target.value }))}
+                              placeholder={`Ingresa ${campo.nombre.toLowerCase()}`}
+                              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
+                              style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--text)" }}
+                            />
+                          ) : campo.tipo === "fecha" ? (
+                            <input
+                              type="date"
+                              value={personalizacionValues[campo.id] || ""}
+                              onChange={(e) => setPersonalizacionValues(prev => ({ ...prev, [campo.id]: e.target.value }))}
+                              className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2"
+                              style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--text)" }}
+                            />
+                          ) : null}
+                          <div className="flex justify-end mt-1">
+                            <span
+                              className="text-xs"
+                              style={{ color: "var(--textSecondary)" }}
+                            >
+                              {(personalizacionValues[campo.id] || "").length}/40
+                            </span>
+                          </div>
+                        </div>
+
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cantidad */}
+                {maxCantidad > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span style={{ color: "var(--textSecondary)" }} className="text-xs font-medium">Cantidad:</span>
+                    <div style={{ background: "var(--bgSecondary)" }} className="flex items-center rounded-xl p-1 gap-1">
+                      <button
+                        onClick={() => setCantidad((v) => Math.max(1, v - 1))}
+                        style={{ color: "var(--text)" }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 font-bold text-lg transition-colors"
+                      >−</button>
+                      <span style={{ color: "var(--text)" }} className="w-9 text-center text-sm font-semibold">
+                        {cantidad}
+                      </span>
+                      <button
+                        onClick={() => setCantidad((v) => Math.min(maxCantidad, v + 1))}
+                        style={{ color: "var(--text)" }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 font-bold text-lg transition-colors"
+                      >+</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Acciones */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddCart}
+                    disabled={maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold border transition-all ${
+                      maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))
+                        ? "bg-white/5 text-white/30 border-white/10 cursor-not-allowed opacity-50 shadow-none"
+                        : inCart
+                          ? "bg-[var(--card)] text-[var(--text)] border-[var(--primary)] hover:border-[var(--primaryHover)] hover:shadow-md"
+                          : "bg-[var(--card)] text-[var(--text)] border-[var(--border)] hover:border-[var(--primary)] hover:shadow-md"
+                    }`}
+                  >
+                    <span className="material-icons-round text-[18px]">
+                      {inCart ? "remove_shopping_cart" : "add_shopping_cart"}
+                    </span>
+                    {inCart ? "Quitar del carrito" : "Añadir al carrito"}
+                  </button>
+
+                  {isLogged && (
+                    <button
+                      onClick={handleFav}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                        isFav
+                          ? "bg-red-500 text-white shadow"
+                          : "bg-[var(--card)] border border-[var(--border)] text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:shadow-sm"
+                      }`}
+                      title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+                    >
+                      <span className="material-icons-round text-xl">
+                        {isFav ? "favorite" : "favorite_border"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Descripción debajo de Añadir al carrito */}
+                <div className="mt-6">
+                  <h2 style={{ color: "var(--text)" }} className="text-lg font-semibold mb-2">Descripción del producto</h2>
+                  {rawDescripcion.trim() ? (
+                    descItems.length > 0 && (descItems.length > 1 || descItems[0].sub.length > 0 || descItems[0].text !== rawDescripcion.trim()) ? (
+                      <ul className="space-y-2">
+                        {descItems.map((item, idx) => (
+                          <li key={idx} className="flex gap-2 text-sm leading-relaxed" style={{ color: "var(--textSecondary)" }}>
+                            <span style={{ color: "var(--textSecondary)" }} className="flex-shrink-0 mt-0.5">›</span>
+                            <span>
+                              {item.text}
+                              {item.sub.length > 0 && (
+                                <ul className="mt-1 space-y-0.5 ml-3">
+                                  {item.sub.map((s, j) => (
+                                    <li key={j} className="flex gap-1.5" style={{ color: "var(--textSecondary)" }}>
+                                      <span className="flex-shrink-0">–</span>{s}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ color: "var(--textSecondary)" }} className="text-sm leading-relaxed whitespace-pre-line">{rawDescripcion}</p>
+                    )
+                  ) : (
+                    <p style={{ color: "var(--textSecondary)" }} className="text-sm">Sin descripción</p>
+                  )}
+                </div>
+
+                {/* Descripción */}
+                {descItems.length > 0 && (
                   <ul className="space-y-2">
+                    <h1 style={{ color: "var(--text)" }}>Descripción:</h1>
                     {descItems.map((item, idx) => (
                       <li key={idx} className="flex gap-2 text-sm leading-relaxed" style={{ color: "var(--textSecondary)" }}>
                         <span style={{ color: "var(--textSecondary)" }} className="flex-shrink-0 mt-0.5">›</span>
@@ -725,101 +769,190 @@ export default function ProductDetailPage({ params }) {
                       </li>
                     ))}
                   </ul>
-                ) : (
-                  <p style={{ color: "var(--textSecondary)" }} className="text-sm leading-relaxed whitespace-pre-line">{rawDescripcion}</p>
-                )
-              ) : (
-                <p style={{ color: "var(--textSecondary)" }} className="text-sm">Sin descripción</p>
-              )}
-            </div>
+                )}
+              </div>
 
-            {/* Descripción */}
-            {descItems.length > 0 && (
-              <ul className="space-y-2">
-                <h1 style={{ color: "var(--text)" }}>Descripción:</h1>
-                {descItems.map((item, idx) => (
-                  <li key={idx} className="flex gap-2 text-sm leading-relaxed" style={{ color: "var(--textSecondary)" }}>
-                    <span style={{ color: "var(--textSecondary)" }} className="flex-shrink-0 mt-0.5">›</span>
-                    <span>
-                      {item.text}
-                      {item.sub.length > 0 && (
-                        <ul className="mt-1 space-y-0.5 ml-3">
-                          {item.sub.map((s, j) => (
-                            <li key={j} className="flex gap-1.5" style={{ color: "var(--textSecondary)" }}>
-                              <span className="flex-shrink-0">–</span>{s}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            </div>
           </div>
 
-        </div>
-      </div>
-
-        {/* ── TABS móvil: debajo de info, encima de relacionados ── */}
-        <div className="md:hidden mt-4 flex flex-col gap-0">
-          <div style={{ borderColor: "var(--border)" }} className="flex rounded-xl overflow-hidden border">
-            {hasCaracteristicas && (
+          {/* ── TABS móvil: debajo de info, encima de relacionados ── */}
+          <div className="md:hidden mt-4 flex flex-col gap-0">
+            <div style={{ borderColor: "var(--border)" }} className="flex rounded-xl overflow-hidden border">
+              {hasCaracteristicas && (
+                <button
+                  onClick={() => handleTabToggle("caracteristicas")}
+                  style={{
+                    background: activeTab === "caracteristicas" ? "var(--primary)" : "var(--bgSecondary)",
+                    color: activeTab === "caracteristicas" ? "var(--primaryForeground)" : "var(--text)"
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                    hasCaracteristicas ? "" : ""
+                  }`}
+                >
+                  <span className="material-icons-round text-[16px]">list_alt</span>
+                  Características
+                </button>
+              )}
               <button
-                onClick={() => handleTabToggle("caracteristicas")}
+                onClick={() => handleTabToggle("resenas")}
                 style={{
-                  background: activeTab === "caracteristicas" ? "var(--primary)" : "var(--bgSecondary)",
-                  color: activeTab === "caracteristicas" ? "var(--primaryForeground)" : "var(--text)"
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
-                  hasCaracteristicas ? "" : ""
-                }`}
-              >
-                <span className="material-icons-round text-[16px]">list_alt</span>
-                Características
-              </button>
-            )}
-            <button
-              onClick={() => handleTabToggle("resenas")}
-              style={{
-                background: activeTab === "resenas" ? "var(--primary)" : "var(--bgSecondary)",
-                color: activeTab === "resenas" ? "var(--primaryForeground)" : "var(--text)"
-              }}
-              className={`hasCaracteristics ? "border-l" : ""} flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
-                hasCaracteristicas ? "border-l" : ""
-              }`}
-            >
-              <span className="material-icons-round text-[16px]">star_outline</span>
-              Reseñas
-              {reviews.length > 0 && (
-                <span style={{
                   background: activeTab === "resenas" ? "var(--primary)" : "var(--bgSecondary)",
                   color: activeTab === "resenas" ? "var(--primaryForeground)" : "var(--text)"
-                }} className={`text-xs px-1.5 py-0.5 rounded-full font-bold`}>
-                  {reviews.length}
-                </span>
-              )}
-            </button>
+                }}
+                className={`hasCaracteristics ? "border-l" : ""} flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                  hasCaracteristicas ? "border-l" : ""
+                }`}
+              >
+                <span className="material-icons-round text-[16px]">star_outline</span>
+                Reseñas
+                {reviews.length > 0 && (
+                  <span style={{
+                    background: activeTab === "resenas" ? "var(--primary)" : "var(--bgSecondary)",
+                    color: activeTab === "resenas" ? "var(--primaryForeground)" : "var(--text)"
+                  }} className={`text-xs px-1.5 py-0.5 rounded-full font-bold`}>
+                    {reviews.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {activeTab && (
+              <div style={{ borderColor: "var(--border)", background: "var(--bgSecondary)" }} className="border border-t-0 rounded-b-xl px-4 py-4">
+                {activeTab === "caracteristicas" && hasCaracteristicas && (
+                  <ul className="space-y-2">
+                    {producto.caracteristicas.map((c, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--textSecondary)" }}>
+                        <span style={{ background: "var(--textSecondary)" }} className="w-1 h-1 rounded-full mt-2 flex-shrink-0" />
+                        <Markdown>{c}</Markdown>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {activeTab === "resenas" && (
+                  <ReviewsSection {...reviewsProps} />
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── CON LANDING PAGE: Nuevo diseño ───────────────────────────── */}
+      {producto?.landingPage?.enabled && (
+        <>
+          {/* Hero Section */}
+          {producto.landingPage.hero?.enabled && (
+            <HeroSection data={producto.landingPage.hero} />
+          )}
+
+          {/* Galería completa de imágenes (full width, más grandes y centradas) */}
+          <div className="bg-slate-50 dark:bg-slate-900 py-16">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 sm:px-6 lg:px-8">
+              {producto.imagenes.map((img, idx) => (
+                <div key={idx} className="rounded-3xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl">
+                  <img
+                    src={img}
+                    alt={`${producto.nombre} - Imagen ${idx + 1}`}
+                    className="w-full h-auto object-contain p-8"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
-          {activeTab && (
-            <div style={{ borderColor: "var(--border)", background: "var(--bgSecondary)" }} className="border border-t-0 rounded-b-xl px-4 py-4">
-              {activeTab === "caracteristicas" && hasCaracteristicas && (
-                <ul className="space-y-2">
-                  {producto.caracteristicas.map((c, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--textSecondary)" }}>
-                      <span style={{ background: "var(--textSecondary)" }} className="w-1 h-1 rounded-full mt-2 flex-shrink-0" />
-                      <Markdown>{c}</Markdown>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {activeTab === "resenas" && (
-                <ReviewsSection {...reviewsProps} />
-              )}
+          {/* Botón ver ofertas - con mismo fondo que la sección de imágenes */}
+          {producto.landingPage.offers?.enabled && (
+            <div className="bg-white dark:bg-slate-900 py-12">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const offersSection = document.getElementById('offers-section');
+                    if (offersSection) {
+                      offersSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="w-full max-w-2xl mx-auto py-5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-4"
+                >
+                  <span className="material-icons-round text-3xl">local_offer</span>
+                  Ver ofertas especiales
+                </button>
+              </div>
             </div>
           )}
-        </div>
+
+          {/* Benefits Section */}
+          {producto.landingPage.benefits?.enabled && (
+            <BenefitsSection data={producto.landingPage.benefits} />
+          )}
+
+          {/* Testimonials Section */}
+          {producto.landingPage.testimonials?.enabled && (
+            <TestimonialsSection data={producto.landingPage.testimonials} />
+          )}
+
+          {/* Offers Section */}
+          {producto.landingPage.offers?.enabled && (
+            <div id="offers-section">
+              <OffersSection
+                data={producto.landingPage.offers}
+                basePrice={basePrice}
+                onOfferSelect={(cantidad, precio) => {
+                  setSelectedOffer({ cantidad, precio });
+                  setCantidad(cantidad);
+                }}
+                selectedCantidad={selectedOffer?.cantidad}
+              />
+            </div>
+          )}
+
+          {/* Botón de añadir al carrito (debajo de ofertas) */}
+          <div className="px-4 sm:px-6 lg:px-8 py-16">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center max-w-5xl mx-auto">
+              <button
+                onClick={handleAddCart}
+                disabled={maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))}
+                className={`flex-1 flex items-center justify-center gap-4 py-6 rounded-2xl text-xl font-bold border transition-all ${
+                  maxCantidad === 0 || (hasVariations && variationAttributeIds.length > 0 && !variationAttributeIds.every(attrId => selectedVariations[attrId]))
+                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50"
+                    : inCart
+                      ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-slate-300 dark:border-slate-600 hover:border-blue-500 hover:shadow-lg"
+                      : "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
+                }`}
+              >
+                <span className="material-icons-round text-4xl">
+                  {inCart ? "remove_shopping_cart" : "add_shopping_cart"}
+                </span>
+                {inCart ? "Quitar del carrito" : "Añadir al carrito"}
+              </button>
+
+              {isLogged && (
+                <button
+                  onClick={handleFav}
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${
+                    isFav
+                      ? "bg-red-500 text-white shadow-lg shadow-red-500/30"
+                      : "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-red-500 hover:text-red-500"
+                  }`}
+                  title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+                >
+                  <span className="material-icons-round text-3xl">
+                    {isFav ? "favorite" : "favorite_border"}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Información adicional - usando descripción y características del producto */}
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <AdditionalInfoSection items={[
+              { titulo: "Descripción", contenido: rawDescripcion || "Sin descripción disponible" },
+              ...(hasCaracteristicas ? [{ titulo: "Características", contenido: producto.caracteristicas.join("\n") }] : [])
+            ]} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -901,23 +1034,28 @@ function ReviewsSection({
           <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} onClick={() => setReviewRating(i + 1)} role="button"
-                aria-label={`Calificación ${i + 1}`}
-                className={`text-2xl cursor-pointer transition-transform hover:scale-110 select-none ${
-                  i < reviewRating ? "text-yellow-400" : "dark:text-white/15 text-gray-300"
-                }`}>★</span>
+                className={`text-2xl cursor-pointer transition-transform hover:scale-110 ${i < reviewRating ? "text-yellow-400" : "text-white/15"}`}
+              >
+                ★
+              </span>
             ))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label style={{ color: "var(--text)" }} className="text-xs">Comentario</label>
-          <textarea style={inputStyle} className="w-full px-3 py-2.5 rounded-xl border text-sm placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors resize-none" rows={3}
-            placeholder="Cuéntanos tu experiencia..." value={reviewText}
-            onChange={(e) => setReviewText(e.target.value)} required />
+          <textarea
+            style={inputStyle}
+            className="w-full px-3 py-2.5 rounded-xl border text-sm placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors min-h-24"
+            placeholder="Comparte tu experiencia con este producto"
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            required
+          />
         </div>
 
         {reviewError && (
-          <p className="text-xs text-red-400">{reviewError}</p>
+          <p className="text-red-400 text-sm">{reviewError}</p>
         )}
 
         <div className="flex items-center justify-between gap-4">

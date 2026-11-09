@@ -18,6 +18,12 @@ function CheckoutContent() {
 
   const items = Array.isArray(carrito) ? carrito : [];
   const subtotal = items.reduce((sum, item: any) => {
+    // Si el item tiene oferta seleccionada, usar el precioUnitario de la oferta
+    if (item.ofertaSeleccionada && item.precioUnitario) {
+      console.log("🛒 Checkout item con oferta:", item, "precioUnitario:", item.precioUnitario);
+      return sum + item.precioUnitario * Number(item?.cantidad || 1);
+    }
+    // De lo contrario, usar el cálculo normal
     const { finalPrice } = getSnapshotPricing(item);
     console.log("🛒 Checkout item:", item, "finalPrice:", finalPrice);
     return sum + finalPrice * Number(item?.cantidad || 1);

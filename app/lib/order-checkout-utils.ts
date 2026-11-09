@@ -28,6 +28,8 @@ export type CheckoutRequestItem = {
   selectedColor?: string;
   selectedVariations?: Record<string, string>;
   variationAttributeIds?: string[];
+  precioUnitario?: number;
+  ofertaSeleccionada?: { cantidad: number; precio: number };
 };
 
 type VariantMatch = {
@@ -167,11 +169,33 @@ export function buildOrderProductLine(item: CheckoutRequestItem, productData: an
     ? Number(variant?.precio ?? productData?.precio ?? 0)
     : Number(productData?.precio ?? 0);
 
-  const { basePrice, discount, hasDiscount, finalPrice } = getCatalogPricing({
-    ...productData,
-    precio: variantBasePrice,
-    precioBase: variantBasePrice,
-  });
+  // Si el item tiene precioUnitario de oferta, usarlo en lugar de recalcular
+  const precioUnitario = item?.precioUnitario;
+  const ofertaSeleccionada = item?.ofertaSeleccionada;
+
+  let finalPrice: number;
+  let basePrice: number;
+  let discount: number = 0;
+  let hasDiscount: boolean = false;
+
+  if (precioUnitario && ofertaSeleccionada) {
+    // Usar el precio de la oferta
+    finalPrice = precioUnitario;
+    basePrice = variantBasePrice;
+    discount = variantBasePrice - precioUnitario;
+    hasDiscount = discount > 0;
+  } else {
+    // Calcular precio normal
+    const pricing = getCatalogPricing({
+      ...productData,
+      precio: variantBasePrice,
+      precioBase: variantBasePrice,
+    });
+    basePrice = pricing.basePrice;
+    discount = pricing.discount;
+    hasDiscount = pricing.hasDiscount;
+    finalPrice = pricing.finalPrice;
+  }
 
   const subtotal = Math.round(finalPrice * cantidad * 100) / 100;
   const variantSelectionSummary = getSelectionSummary(item, variant);

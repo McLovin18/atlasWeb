@@ -62,7 +62,27 @@ function buildOrderEmailHTML(orden: any): string {
                   ${
                     orden.productos && Array.isArray(orden.productos)
                       ? orden.productos.map((p: any) => {
-                          const { finalPrice: precioUnit, discount: descuento, hasDiscount: hasDescuento, fakeOldPrice } = getSnapshotPricing(p);
+                          // Si el producto tiene oferta seleccionada, usar el precioUnitario de la oferta
+                          let precioUnit: number;
+                          let descuento: number = 0;
+                          let hasDescuento: boolean = false;
+                          let fakeOldPrice: number | null = null;
+
+                          if (p.ofertaSeleccionada && p.precioUnitario) {
+                            precioUnit = p.precioUnitario;
+                            const precioNormal = p.precioBase || p.precio;
+                            descuento = precioNormal - precioUnit;
+                            hasDescuento = descuento > 0;
+                            fakeOldPrice = hasDescuento ? precioNormal : null;
+                          } else {
+                            // Usar el cálculo normal
+                            const pricing = getSnapshotPricing(p);
+                            precioUnit = pricing.finalPrice;
+                            descuento = pricing.discount;
+                            hasDescuento = pricing.hasDiscount;
+                            fakeOldPrice = pricing.fakeOldPrice;
+                          }
+
                           const cantidad = Number(p.cantidad || 1);
                           const subtotal = precioUnit * cantidad;
                           return `

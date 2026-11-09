@@ -115,7 +115,29 @@ async function validarYRecalcularTotal(productos: any[]): Promise<{
 function buildProformaHTML(orden: any): string {
   const rows = orden.productos
     .map((p: any) => {
-      const { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice } = getSnapshotPricing(p);
+      // Si el producto tiene oferta seleccionada, usar el precioUnitario de la oferta
+      let basePrice: number;
+      let discount: number = 0;
+      let hasDiscount: boolean = false;
+      let fakeOldPrice: number | null = null;
+      let finalPrice: number;
+
+      if (p.ofertaSeleccionada && p.precioUnitario) {
+        finalPrice = p.precioUnitario;
+        basePrice = p.precioBase || p.precio;
+        discount = basePrice - finalPrice;
+        hasDiscount = discount > 0;
+        fakeOldPrice = hasDiscount ? basePrice : null;
+      } else {
+        // Usar el cálculo normal
+        const pricing = getSnapshotPricing(p);
+        basePrice = pricing.basePrice;
+        discount = pricing.discount;
+        hasDiscount = pricing.hasDiscount;
+        fakeOldPrice = pricing.fakeOldPrice;
+        finalPrice = pricing.finalPrice;
+      }
+
       const subtotal = finalPrice * (p.cantidad || 1);
       return `
         <tr>
@@ -124,7 +146,7 @@ function buildProformaHTML(orden: any): string {
           <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right;">
             ${hasDiscount ? `<span style="text-decoration:line-through;color:#9ca3af;font-size:12px;">$${fakeOldPrice?.toFixed(2)}</span><br/>` : ""}
             $${finalPrice.toFixed(2)}
-            ${hasDiscount ? `<span style="background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:4px;">-${discount}%</span>` : ""}
+            ${hasDiscount ? `<span style="background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:4px;">-${discount.toFixed(0)}%</span>` : ""}
           </td>
           <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:bold;">$${subtotal.toFixed(2)}</td>
         </tr>

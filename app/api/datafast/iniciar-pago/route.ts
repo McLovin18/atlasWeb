@@ -38,7 +38,8 @@ interface IniciarPagoRequest {
     selectedVariations?: Record<string, string>;
     variationAttributeIds?: string[];
     nombre?: string;
-    precio?: number;
+    precioUnitario?: number;
+    ofertaSeleccionada?: { cantidad: number; precio: number };
   }>;
   subtotal: number;
   costoEnvio: number;
@@ -149,7 +150,6 @@ async function createDatafastCheckout(
     currency: DATAFAST_CURRENCY,
     paymentType: "DB",
     merchantTransactionId: orderId,
-    testMode: "EXTERNAL", // Requerido en Fase 2
     shopperResultUrl: shopperResultUrl, // URL para recibir el callback de Datafast
     customer: {
       email: customerEmail,

@@ -1666,6 +1666,27 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
                           />
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={oferta.masPopular || false}
+                          onChange={e => setOffersSection(prev => ({
+                            ...prev,
+                            ofertas: prev.ofertas?.map((of, i) => {
+                              if (i === idx) {
+                                return { ...of, masPopular: e.target.checked };
+                              }
+                              // Si se marca esta como popular, desmarcar las demás
+                              if (e.target.checked && of.masPopular) {
+                                return { ...of, masPopular: false };
+                              }
+                              return of;
+                            })
+                          }))}
+                          className="w-4 h-4 rounded cursor-pointer accent-orange-500"
+                        />
+                        <label className="text-sm text-slate-600 cursor-pointer">Marcar como "Más Popular"</label>
+                      </div>
                     </div>
                   ))}
                   <button

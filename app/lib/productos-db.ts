@@ -47,6 +47,7 @@ export interface TestimonialsSectionData {
 export interface OfferItem {
   cantidad: number;
   precio: number;
+  masPopular?: boolean;
 }
 
 export interface OffersSectionData {

@@ -48,7 +48,7 @@ export default function OffersSection({ data, basePrice, onOfferSelect, selected
                 }`}
               >
                 {/* Popular Badge */}
-                {idx === 0 && (
+                {oferta.masPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
                     MÁS POPULAR
                   </div>

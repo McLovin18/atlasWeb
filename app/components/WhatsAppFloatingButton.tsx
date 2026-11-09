@@ -109,7 +109,7 @@ const WhatsAppFloatingButton: React.FC = () => {
       `}</style>
 
       <a
-        href="https://wa.me/593968517232"
+        href="https://wa.me/593982804800"
         target="_blank"
         rel="noreferrer"
         aria-label="WhatsApp Marca Estilo"

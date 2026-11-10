@@ -28,7 +28,7 @@ function CheckoutContent() {
     console.log("🛒 Checkout item:", item, "finalPrice:", finalPrice);
     return sum + finalPrice * Number(item?.cantidad || 1);
   }, 0);
-  const costoEnvio = 1; // $1 costo de envío
+  const costoEnvio = 5; // $5 costo de envío
   const total = subtotal + costoEnvio;
   
   console.log("[CheckoutPage] costoEnvio:", costoEnvio, "subtotal:", subtotal, "total:", total);

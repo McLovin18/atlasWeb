@@ -70,10 +70,27 @@ export default function FeaturedProductsSection({
   const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
   const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "0.5rem");
 
+  // Helper para calcular el stock total de un producto
+  function getTotalStock(prod: any): number {
+    if (!prod) return 0;
+
+    // Si tiene variantes, sumar el stock de todas las variantes
+    if (prod.stockVariants && Array.isArray(prod.stockVariants) && prod.stockVariants.length > 0) {
+      return prod.stockVariants.reduce((sum: number, v: any) => sum + (v?.cantidad || v?.stock || 0), 0);
+    }
+
+    // Si no tiene variantes, usar el stock simple
+    return Number(prod.stock || 0);
+  }
+
   // Filtra productos válidos, ordena por fecha de creación (más nuevo primero) y limita a MAX_PRODUCTS
   const recentProducts = React.useMemo(() => {
     return products
-      .filter((prod: any) => prod && prod.id)
+      .filter((prod: any) => {
+        if (!prod || !prod.id) return false;
+        // Excluir productos sin stock
+        return getTotalStock(prod) > 0;
+      })
       .sort((a: any, b: any) => getCreatedAtMillis(b) - getCreatedAtMillis(a))
       .slice(0, MAX_PRODUCTS);
   }, [products]);

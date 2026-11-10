@@ -34,7 +34,7 @@ const sections = [
   {
     number: "06",
     title: "Cambios y Devoluciones",
-    body: "Tienes 5 días calendario desde que recibes el producto para solicitar cambio por talla, color o modelo, según la Ley de Defensa del Consumidor. El producto debe estar sin uso, con etiquetas originales, en empaque original y sin olores. No aplica para artículos por higiene. El cliente asume el costo de envío por cambio, salvo que el error sea de Importadora Atlas. No se realizan devoluciones de dinero — solo cambios o nota de crédito. Si recibiste un producto defectuoso o diferente al pedido, asumimos todos los costos; repórtalo en máximo 48 horas desde la entrega.",
+    body: "Tienes 5 días calendario desde que recibes el producto para solicitar cambio por modelo o color, según la Ley de Defensa del Consumidor. El producto debe estar sin uso, con accesorios originales, en empaque original y sin daños. El cliente asume el costo de envío por cambio, salvo que el error sea de Importadora Atlas. No se realizan devoluciones de dinero — solo cambios o nota de crédito. Si recibiste un producto defectuoso o diferente al pedido, asumimos todos los costos; repórtalo en máximo 48 horas desde la entrega.",
   },
   {
     number: "07",
@@ -49,7 +49,7 @@ const sections = [
   {
     number: "09",
     title: "Responsabilidad",
-    body: "MarcaEstilo no se hace responsable por el mal uso que el cliente dé a los productos. No garantizamos que el sitio esté libre de errores; si encuentras uno, repórtalo a marcaestilo593@gmail.com. No nos responsabilizamos por links a sitios de terceros.",
+    body: "Importadora Atlas no se hace responsable por el mal uso que el cliente dé a los productos. No garantizamos que el sitio esté libre de errores; si encuentras uno, repórtalo a importaciones.Atlas@hotmail.com. No nos responsabilizamos por links a sitios de terceros.",
   },
   {
     number: "10",
@@ -64,7 +64,7 @@ const sections = [
   {
     number: "12",
     title: "Modificaciones",
-    body: "MarcaEstilo se reserva el derecho de modificar estos Términos y Condiciones en cualquier momento. Los cambios aplican desde su publicación en la web. Te recomendamos revisarlos antes de cada compra.",
+    body: "Importadora Atlas se reserva el derecho de modificar estos Términos y Condiciones en cualquier momento. Los cambios aplican desde su publicación en la web. Te recomendamos revisarlos antes de cada compra.",
   },
   {
     number: "13",

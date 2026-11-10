@@ -103,7 +103,7 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
     label: "Galería",
     icon: "collections",
     fields: [
-      { name: "title", type: "text", label: "Título", group: "content" },
+      { name: "title", type: "text", label: "Título", group: "content", stylable: true },
       { name: "paddingTop", type: "text", label: "Padding superior", group: "styles" },
       { name: "paddingBottom", type: "text", label: "Padding inferior", group: "styles" },
     ],

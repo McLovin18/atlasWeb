@@ -143,7 +143,9 @@ async function createDatafastCheckout(
   })).reduce((acc, item) => ({ ...acc, ...item }), {});
 
   // URL donde Datafast enviará el resultado del pago (callback)
-  const shopperResultUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/datafast/resultado`;
+  // Usar la URL del request para evitar duplicaciones
+  const baseUrl = req.nextUrl.origin;
+  const shopperResultUrl = `${baseUrl}/api/datafast/resultado`;
 
   const payload = {
     amount: amount.toFixed(2),

@@ -95,7 +95,7 @@ const nextConfig: NextConfig = {
           // Content Security Policy para permitir Datafast, Firebase y Google Analytics
           {
             key: "Content-Security-Policy",
-            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* blob:; worker-src 'self' blob:; frame-src 'self' https://eu-test.oppwa.com https://test.oppwa.com https://eu-prod.oppwa.com https://oppwa.com https://botonpagodesa.datafast.ec https://acs.api.alignet.io; connect-src 'self' https://eu-test.oppwa.com https://test.oppwa.com https://eu-prod.oppwa.com https://oppwa.com https://botonpagodesa.datafast.ec https://acs.api.alignet.io https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com https://www.google.com;",
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://* blob:; worker-src 'self' blob:; frame-src 'self' https://eu-test.oppwa.com https://test.oppwa.com https://eu-prod.oppwa.com https://oppwa.com https://botonpagodesa.datafast.ec https://acs.api.alignet.io https://eu-prod.ppipe.net; connect-src 'self' https://eu-test.oppwa.com https://test.oppwa.com https://eu-prod.oppwa.com https://oppwa.com https://botonpagodesa.datafast.ec https://acs.api.alignet.io https://eu-prod.ppipe.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google-analytics.com https://www.google.com;",
           },
           // Cache headers para mejor rendimiento
           {

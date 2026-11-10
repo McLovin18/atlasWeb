@@ -93,7 +93,8 @@ async function createDatafastCheckout(
   pedidoId?: string,
   direccion?: any,
   cliente?: any,
-  customerIp?: string
+  customerIp?: string,
+  shopperResultUrl?: string
 ): Promise<{ checkoutId: string }> {
   console.log("[Datafast] Configuración:", {
     baseUrl: DATAFAST_BASE_URL,
@@ -143,16 +144,15 @@ async function createDatafastCheckout(
   })).reduce((acc, item) => ({ ...acc, ...item }), {});
 
   // URL donde Datafast enviará el resultado del pago (callback)
-  // Usar la URL del request para evitar duplicaciones
-  const baseUrl = req.nextUrl.origin;
-  const shopperResultUrl = `${baseUrl}/api/datafast/resultado`;
+  // Usar la URL proporcionada o un valor por defecto
+  const shopperResultUrlFinal = shopperResultUrl || "http://localhost:3000/api/datafast/resultado";
 
   const payload = {
     amount: amount.toFixed(2),
     currency: DATAFAST_CURRENCY,
     paymentType: "DB",
     merchantTransactionId: orderId,
-    shopperResultUrl: shopperResultUrl, // URL para recibir el callback de Datafast
+    shopperResultUrl: shopperResultUrlFinal, // URL para recibir el callback de Datafast
     customer: {
       email: customerEmail,
       givenName: customerName.split(" ")[0] || customerName,
@@ -327,6 +327,7 @@ export async function POST(req: NextRequest) {
             console.log(`[iniciar-pago] Renovando checkout (${motivo})...`);
             console.log("[iniciar-pago] Direccion:", body.direccion);
             console.log("[iniciar-pago] Cliente:", body.cliente);
+            const shopperResultUrl = `${req.nextUrl.origin}/api/datafast/resultado`;
             const { checkoutId: newCheckoutId } = await createDatafastCheckout(
               orden.orderId,
               orden.total || body.total,
@@ -335,7 +336,8 @@ export async function POST(req: NextRequest) {
               preCheck.existingOrderId,
               body.direccion,
               body.cliente,
-              getClientIp(req)
+              getClientIp(req),
+              shopperResultUrl
             );
             console.log("[iniciar-pago] Nuevo checkoutId creado:", newCheckoutId);
 
@@ -461,6 +463,7 @@ export async function POST(req: NextRequest) {
 
     // Crear checkout en Datafast
     console.log("[iniciar-pago] Creando checkout en Datafast...");
+    const shopperResultUrl = `${req.nextUrl.origin}/api/datafast/resultado`;
     const { checkoutId } = await createDatafastCheckout(
       orden.orderId,
       totalCalculado,
@@ -469,7 +472,8 @@ export async function POST(req: NextRequest) {
       orden.id,
       body.direccion,
       body.cliente,
-      getClientIp(req)
+      getClientIp(req),
+      shopperResultUrl
     );
     console.log("[iniciar-pago] CheckoutId creado:", checkoutId);
 

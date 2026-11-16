@@ -5,6 +5,7 @@ import type {
   LandingSectionStyles,
   LandingFieldStyle,
 } from "../../lib/landing-types";
+import { themeManager } from "../../components/themeManager";
 
 export type GallerySectionProps = {
   title?: string;
@@ -28,6 +29,16 @@ export default function GallerySection({
   styles,
   fieldStyles,
 }: GallerySectionProps) {
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    const checkTheme = () => setTheme(themeManager.getTheme());
+    checkTheme();
+    const handler = () => checkTheme();
+    window.addEventListener("theme-changed", handler);
+    return () => window.removeEventListener("theme-changed", handler);
+  }, []);
+
   const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
   const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
 
@@ -105,7 +116,10 @@ export default function GallerySection({
         <div className="mb-6 text-center">
           <h2
             className="section-title"
-            style={fieldStyles?.title || { color: "var(--text)" }}
+            style={{
+              ...(fieldStyles?.title || {}),
+              color: theme === "light" ? "#0f172a" : "#ffffff",
+            }}
           >
             {title}
           </h2>

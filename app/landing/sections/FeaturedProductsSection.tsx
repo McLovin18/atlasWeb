@@ -47,7 +47,6 @@ export default function FeaturedProductsSection({
   loading = false,
 }: FeaturedProductsSectionProps) {
   const [theme, setTheme] = React.useState("dark");
-  const titleRef = React.useRef<HTMLHeadingElement>(null);
 
   React.useEffect(() => {
     const checkTheme = () => {
@@ -59,13 +58,6 @@ export default function FeaturedProductsSection({
     window.addEventListener('theme-changed', handler);
     return () => window.removeEventListener('theme-changed', handler);
   }, []);
-
-  React.useEffect(() => {
-    if (titleRef.current) {
-      const titleEl = titleRef.current;
-      titleEl.style.color = theme === "light" ? "#0f172a" : "var(--text)";
-    }
-  }, [theme]);
 
   const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
   const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "0.5rem");
@@ -191,9 +183,11 @@ export default function FeaturedProductsSection({
       {/* Título */}
       {title && (
         <h2
-          ref={titleRef}
           className="section-title text-center py-2"
-          style={fieldStyles?.title || { color: "var(--text)" }}
+          style={{
+            ...(fieldStyles?.title || {}),
+            color: theme === "light" ? "#0f172a" : "#ffffff",
+          }}
         >
           {title}
         </h2>

@@ -982,7 +982,7 @@ export default function LandingEditor() {
   const handleAddVIPItem = async (sectionIndex: number) => {
     await updateVIPItems(sectionIndex, (items) => [
       ...items,
-      { badge: "", title: "", subtitle: "", buttonText: "VER MÁS 👀", buttonLink: "", image: "" },
+      { badge: "", title: "", subtitle: "", buttonText: "VER MÁS 👀", buttonLink: "", image: "", rating: 5 },
     ]);
   };
 
@@ -990,7 +990,7 @@ export default function LandingEditor() {
     sectionIndex: number,
     itemIndex: number,
     field: string,
-    value: string
+    value: string | number
   ) => {
     await updateVIPItems(sectionIndex, (items) => {
       const copy = [...items];
@@ -2587,6 +2587,7 @@ export default function LandingEditor() {
                                           buttonText?: string;
                                           buttonLink?: string;
                                           image?: string;
+                                          rating?: number;
                                         }[];
 
                                         if (!vipItems.length) {
@@ -2661,7 +2662,31 @@ export default function LandingEditor() {
                                                         )
                                                       }
                                                     />
-                                                    
+
+                                                    <div className="space-y-1">
+                                                      <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                                                        Calificación (1-5 estrellas)
+                                                      </label>
+                                                      <select
+                                                        className="border rounded px-2 py-1 text-xs w-full"
+                                                        value={item.rating || 5}
+                                                        onChange={(e) =>
+                                                          handleVIPItemFieldChange(
+                                                            idx,
+                                                            itemIndex,
+                                                            "rating",
+                                                            parseInt(e.target.value)
+                                                          )
+                                                        }
+                                                      >
+                                                        <option value={1}>1 ★</option>
+                                                        <option value={2}>2 ★★</option>
+                                                        <option value={3}>3 ★★★</option>
+                                                        <option value={4}>4 ★★★★</option>
+                                                        <option value={5}>5 ★★★★★</option>
+                                                      </select>
+                                                    </div>
+
                                                     <input
                                                       type="text"
                                                       className="border rounded px-2 py-1 text-xs font-semibold"

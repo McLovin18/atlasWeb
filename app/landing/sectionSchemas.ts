@@ -164,6 +164,8 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
     label: "Productos VIP",
     icon: "workspace_premium",
     fields: [
+      { name: "title", type: "text", label: "Título de sección", group: "content", stylable: true },
+      { name: "titleMobileFontSize", type: "text", label: "Tamaño móvil (px) para Título", group: "styles", stylable: true },
       // Los items se gestionan dinámicamente en el panel
       { name: "backgroundColor", type: "color", label: "Color de fondo", group: "styles" },
       { name: "textColor", type: "color", label: "Color de texto", group: "styles" },

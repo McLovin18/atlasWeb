@@ -89,6 +89,7 @@ export type VIPProductItem = {
   buttonText?: string;
   buttonLink?: string;
   image?: string | null;
+  rating?: number; // Calificación de 1 a 5 estrellas
   fieldStyles?: Record<string, LandingFieldStyle>;
 };
 
